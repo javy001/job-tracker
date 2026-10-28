@@ -8,7 +8,7 @@ import * as d3 from 'd3';
 import dayjs from 'dayjs';
 
 const rowHeight = 26;
-const width = 900;
+const minWidth = 400;
 const margins = { top: 20, bottom: 30, left: 180, right: 20 };
 const fontSize = 12;
 
@@ -35,6 +35,19 @@ const getEndDate = (d: JobApplication, today: Date) => {
 export function PipelineTimeline() {
   const [tooltipData, setTooltipData] = React.useState<JobApplication>();
   const [clickedRow, setClickedRow] = React.useState<JobApplication>();
+  const [width, setWidth] = React.useState(900);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  // Track the container's width so the chart fills it and resizes with the window
+  React.useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setWidth(Math.max(Math.floor(entry.contentRect.width), minWidth));
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const data = useApplications();
   // Current local time, so the today line sits within today rather than at midnight
@@ -114,7 +127,7 @@ export function PipelineTimeline() {
         y2={height - margins.bottom}
         stroke={axisColor}
       />
-      {xScale.ticks(8).map((t, i) => {
+      {xScale.ticks(Math.max(Math.floor((width - margins.left) / 90), 2)).map((t, i) => {
         const xPos = xScale(t);
         const yPos = height - margins.bottom;
         return (
@@ -276,7 +289,7 @@ export function PipelineTimeline() {
   }
 
   return (
-    <div style={{ width: 'fit-content' }}>
+    <div style={{ width: '100%' }}>
       {clickedRow && (
         <UpdateApplicationModal
           open={!!clickedRow}
@@ -286,7 +299,7 @@ export function PipelineTimeline() {
       )}
       <Card>
         {legend}
-        <div style={{ position: 'relative' }}>
+        <div ref={containerRef} style={{ position: 'relative' }}>
           <svg height={height} width={width}>
             {xAxis}
             {todayLine}

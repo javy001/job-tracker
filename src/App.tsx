@@ -2,7 +2,7 @@ import React from 'react';
 import Button from '@mui/material/Button';
 import { AddApplicationModal } from './components/AddApplicationModal';
 import { JobsTable } from './components/JobsTable';
-import { SalaryRangeChart } from './components/SalaryRangeChart';
+// import { SalaryRangeChart } from './components/SalaryRangeChart';
 import { MetricCards } from './components/MetricCards';
 import { PipelineTimeline } from './components/PipelineTimeline';
 
@@ -30,7 +30,7 @@ function App() {
       >
         <JobsTable />
         <PipelineTimeline />
-        <SalaryRangeChart />
+        {/* <SalaryRangeChart /> */}
       </div>
     </>
   );
