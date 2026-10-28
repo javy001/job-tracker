@@ -1,0 +1,58 @@
+body {
+  font-family: 'Roboto', sans-serif;
+}
+
+/* Table Container for Responsiveness */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  margin: 1.5rem 0;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Base Table Styling */
+.modern-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Roboto', sans-serif; /* Uses your app's font */
+  font-size: 0.9rem;
+  background-color: #ffffff;
+  text-align: left;
+}
+
+/* Header Styling */
+.modern-table th {
+  background-color: #1e293b; /* Sleek dark slate color */
+  color: #ffffff;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  padding: 1rem 1.5rem;
+}
+
+/* Data Row & Cell Styling */
+.modern-table td {
+  padding: 1rem 1.5rem;
+  color: #334155;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* Alternating Row Striping */
+.modern-table tbody tr:nth-of-type(even) {
+  background-color: #f8fafc;
+}
+
+/* Hover Interactivity */
+.modern-table tbody tr:hover {
+  background-color: #f1f5f9;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+/* Rounded Border Fallback (since collapse prevents border-radius) */
+.modern-table tr:first-child th:first-child { border-top-left-radius: 8px; }
+.modern-table tr:first-child th:last-child { border-top-right-radius: 8px; }
+.modern-table tr:last-child td:first-child { border-bottom-left-radius: 8px; }
+.modern-table tr:last-child td:last-child { border-bottom-right-radius: 8px; }
