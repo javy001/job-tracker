@@ -18,6 +18,18 @@ const barColor = '#94a3b8';
 
 const dateFormatter = d3.timeFormat('%b %d');
 
+type EventFilter = 'all' | 'with_events' | 'no_events';
+
+const eventFilterOptions: { value: EventFilter; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'with_events', label: 'With events' },
+  { value: 'no_events', label: 'No events' },
+];
+
+// Plot everything at noon so dates on the same day line up and sit centered on their tick
+const toNoon = (date: dayjs.ConfigType) =>
+  dayjs(date).startOf('day').add(12, 'hour').toDate();
+
 const isClosed = (d: JobApplication) =>
   d.events.some((e) => closingEventTypes.includes(e.type));
 
@@ -27,7 +39,7 @@ const getEndDate = (d: JobApplication, today: Date) => {
   const events = isClosed(d)
     ? d.events.filter((e) => closingEventTypes.includes(e.type))
     : d.events;
-  const lastEvent = d3.max(events, (e) => dayjs(e.date).toDate());
+  const lastEvent = d3.max(events, (e) => toNoon(e.date));
   if (isClosed(d)) return lastEvent ?? today;
   return lastEvent && lastEvent > today ? lastEvent : today;
 };
@@ -36,6 +48,7 @@ export function PipelineTimeline() {
   const [tooltipData, setTooltipData] = React.useState<JobApplication>();
   const [clickedRow, setClickedRow] = React.useState<JobApplication>();
   const [width, setWidth] = React.useState(900);
+  const [eventFilter, setEventFilter] = React.useState<EventFilter>('all');
   const containerRef = React.useRef<HTMLDivElement>(null);
 
   // Track the container's width so the chart fills it and resizes with the window
@@ -50,12 +63,15 @@ export function PipelineTimeline() {
   }, []);
 
   const data = useApplications();
-  // Current local time, so the today line sits within today rather than at midnight
-  const today = dayjs().toDate();
+  const today = toNoon(undefined);
 
-  const applications = [...(data.data ?? [])].sort(
-    (a, b) => dayjs(a.date_applied).valueOf() - dayjs(b.date_applied).valueOf(),
-  );
+  const applications = (data.data ?? [])
+    .filter((d) => {
+      if (eventFilter === 'with_events') return d.events.length > 0;
+      if (eventFilter === 'no_events') return d.events.length === 0;
+      return true;
+    })
+    .sort((a, b) => dayjs(a.date_applied).valueOf() - dayjs(b.date_applied).valueOf());
 
   const height = margins.top + margins.bottom + applications.length * rowHeight;
 
@@ -127,25 +143,29 @@ export function PipelineTimeline() {
         y2={height - margins.bottom}
         stroke={axisColor}
       />
-      {xScale.ticks(Math.max(Math.floor((width - margins.left) / 90), 2)).map((t, i) => {
-        const xPos = xScale(t);
-        const yPos = height - margins.bottom;
-        return (
-          <g key={`${i}-xtick`}>
-            <line x1={xPos} y1={yPos} x2={xPos} y2={yPos + 5} stroke={axisColor} />
-            <text
-              x={xPos}
-              y={yPos + 5}
-              fontSize={fontSize}
-              dy={12}
-              textAnchor="middle"
-              fill={fontColor}
-            >
-              {dateFormatter(t)}
-            </text>
-          </g>
-        );
-      })}
+      {xScale
+        .ticks(Math.max(Math.floor((width - margins.left) / 90), 2))
+        // Day grain only: drop sub-day ticks when the range is short
+        .filter((t) => t.getHours() === 0)
+        .map((t, i) => {
+          const xPos = xScale(toNoon(t));
+          const yPos = height - margins.bottom;
+          return (
+            <g key={`${i}-xtick`}>
+              <line x1={xPos} y1={yPos} x2={xPos} y2={yPos + 5} stroke={axisColor} />
+              <text
+                x={xPos}
+                y={yPos + 5}
+                fontSize={fontSize}
+                dy={12}
+                textAnchor="middle"
+                fill={fontColor}
+              >
+                {dateFormatter(t)}
+              </text>
+            </g>
+          );
+        })}
     </g>
   );
 
@@ -173,7 +193,7 @@ export function PipelineTimeline() {
 
   const rows = applications.map((d) => {
     const y = yScale(d.id) ?? 0;
-    const start = xScale(dayjs(d.date_applied).toDate());
+    const start = xScale(toNoon(d.date_applied));
     const end = xScale(getEndDate(d, today));
 
     return (
@@ -200,7 +220,7 @@ export function PipelineTimeline() {
         {d.events.map((e, i) => (
           <circle
             key={`${d.id}-event-${i}`}
-            cx={xScale(dayjs(e.date).toDate())}
+            cx={xScale(toNoon(e.date))}
             cy={y + yScale.bandwidth() / 2}
             r={5}
             fill={eventTypes[e.type]?.color ?? barColor}
@@ -228,6 +248,40 @@ export function PipelineTimeline() {
     );
   });
 
+  const filterControl = (
+    <div
+      style={{
+        display: 'flex',
+        gap: '6px',
+        fontSize: `${fontSize}px`,
+        marginBottom: '10px',
+        marginLeft: `${margins.left}px`,
+      }}
+    >
+      {eventFilterOptions.map(({ value, label }) => {
+        const selected = eventFilter === value;
+        return (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setEventFilter(value)}
+            style={{
+              padding: '4px 10px',
+              borderRadius: '999px',
+              border: `1px solid ${selected ? barColor : axisColor}`,
+              backgroundColor: selected ? barColor : 'transparent',
+              color: selected ? 'white' : fontColor,
+              fontSize: `${fontSize}px`,
+              cursor: 'pointer',
+            }}
+          >
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+
   const legend = (
     <div
       style={{
@@ -243,7 +297,12 @@ export function PipelineTimeline() {
       {Object.entries(eventTypes).map(([type, { label, color }]) => (
         <div key={type} style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
           <div
-            style={{ height: '10px', width: '10px', borderRadius: '50%', backgroundColor: color }}
+            style={{
+              height: '10px',
+              width: '10px',
+              borderRadius: '50%',
+              backgroundColor: color,
+            }}
           ></div>
           {label}
         </div>
@@ -254,7 +313,7 @@ export function PipelineTimeline() {
   let tooltip;
   if (tooltipData) {
     const d = tooltipData;
-    const start = xScale(dayjs(d.date_applied).toDate());
+    const start = xScale(toNoon(d.date_applied));
     const end = xScale(getEndDate(d, today));
     tooltip = (
       <div
@@ -298,6 +357,7 @@ export function PipelineTimeline() {
         />
       )}
       <Card>
+        {filterControl}
         {legend}
         <div ref={containerRef} style={{ position: 'relative' }}>
           <svg height={height} width={width}>
