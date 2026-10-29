@@ -1,5 +1,7 @@
 import React from 'react';
-import type { JobApplication } from '../types';
+import dayjs from 'dayjs';
+import type { ApplicationEvent, JobApplication } from '../types';
+import { eventTypes } from '../eventTypes';
 import { UpdateApplicationModal } from './UpdateApplicationModal';
 import { useApplications } from '../hooks/useApplications';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
@@ -19,8 +21,8 @@ const columns: { label: string; name: keyof JobApplication | string }[] = [
     name: 'date_applied',
   },
   {
-    label: 'Status',
-    name: 'status',
+    label: 'Latest Event',
+    name: 'latest_event',
   },
   {
     label: 'Location',
@@ -31,6 +33,18 @@ const columns: { label: string; name: keyof JobApplication | string }[] = [
     name: 'range',
   },
 ];
+
+// The event with the latest date, or undefined if none are scheduled
+const getLatestEvent = (d: JobApplication): ApplicationEvent | undefined =>
+  d.events.reduce<ApplicationEvent | undefined>(
+    (latest, e) => (!latest || e.date > latest.date ? e : latest),
+    undefined,
+  );
+
+const latestEventLabel = (d: JobApplication): string => {
+  const e = getLatestEvent(d);
+  return e ? (eventTypes[e.type]?.label ?? e.type) : '';
+};
 
 export function JobsTable() {
   const [clickedRow, setClickedRow] = React.useState<JobApplication>();
@@ -93,6 +107,12 @@ export function JobsTable() {
                   let aVal = a.salary_max ?? 0;
                   let bVal = b.salary_max ?? 0;
                   return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+                } else if (sortColumn === 'latest_event') {
+                  let aVal = getLatestEvent(a)?.date ?? '';
+                  let bVal = getLatestEvent(b)?.date ?? '';
+                  return sortDirection === 'asc'
+                    ? aVal.localeCompare(bVal)
+                    : bVal.localeCompare(aVal);
                 } else {
                   let aVal = a[sortColumn as keyof JobApplication] as string;
                   let bVal = b[sortColumn as keyof JobApplication] as string;
@@ -102,12 +122,17 @@ export function JobsTable() {
                 }
               })
               .map((d) => {
+                const latestEvent = getLatestEvent(d);
                 return (
                   <tr key={d.id} onClick={() => setClickedRow(d)}>
                     <td>{d.name}</td>
                     <td>{d.role}</td>
                     <td>{new Date(d.date_applied ?? '').toLocaleDateString()}</td>
-                    <td>{d.status}</td>
+                    <td>
+                      {latestEvent
+                        ? `${latestEventLabel(d)} · ${dayjs(latestEvent.date).format('MMM D')}`
+                        : '—'}
+                    </td>
                     <td>{d.location}</td>
                     <td>
                       {d.salary_min?.toLocaleString('en-US')} -{' '}
