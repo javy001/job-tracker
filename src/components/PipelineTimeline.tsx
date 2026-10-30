@@ -328,7 +328,7 @@ export function PipelineTimeline() {
         <Card>
           <div style={{ fontWeight: 500 }}>{d.name}</div>
           <div style={{ color: fontColor, marginBottom: '4px' }}>{d.role}</div>
-          <div>Applied {dayjs(d.date_applied).format('MMM D')}</div>
+          <div>Applied {dayjs(d.date_applied).format('ddd, MMM D')}</div>
           {d.events.map((e, i) => (
             <div key={i} style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
               <div
@@ -339,7 +339,7 @@ export function PipelineTimeline() {
                   backgroundColor: eventTypes[e.type]?.color ?? barColor,
                 }}
               ></div>
-              {eventTypes[e.type]?.label ?? e.type} · {dayjs(e.date).format('MMM D')}
+              {eventTypes[e.type]?.label ?? e.type} · {dayjs(e.date).format('ddd, MMM D')}
             </div>
           ))}
         </Card>

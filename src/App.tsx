@@ -5,6 +5,7 @@ import { JobsTable } from './components/JobsTable';
 // import { SalaryRangeChart } from './components/SalaryRangeChart';
 import { MetricCards } from './components/MetricCards';
 import { PipelineTimeline } from './components/PipelineTimeline';
+import { WeekCalendar } from './components/WeekCalendar';
 
 function App() {
   const [showModal, setShowModal] = React.useState(false);
@@ -15,6 +16,9 @@ function App() {
         <Button size="small" variant="outlined" onClick={() => setShowModal(true)}>
           Add Application
         </Button>
+      </div>
+      <div style={{ marginTop: '10px' }}>
+        <WeekCalendar />
       </div>
       <div style={{ marginTop: '10px' }}>
         <MetricCards />
