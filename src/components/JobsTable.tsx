@@ -6,6 +6,7 @@ import { UpdateApplicationModal } from './UpdateApplicationModal';
 import { useApplications } from '../hooks/useApplications';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import { TextField } from '@mui/material';
 
 const columns: { label: string; name: keyof JobApplication | string }[] = [
   {
@@ -21,6 +22,10 @@ const columns: { label: string; name: keyof JobApplication | string }[] = [
     name: 'date_applied',
   },
   {
+    label: 'Source',
+    name: 'source',
+  },
+  {
     label: 'Latest Event',
     name: 'latest_event',
   },
@@ -33,6 +38,11 @@ const columns: { label: string; name: keyof JobApplication | string }[] = [
     name: 'range',
   },
 ];
+
+const sourceLabels: Record<string, string> = {
+  inbound: 'Inbound',
+  outbound: 'Outbound',
+};
 
 // The event with the latest date, or undefined if none are scheduled
 const getLatestEvent = (d: JobApplication): ApplicationEvent | undefined =>
@@ -52,6 +62,7 @@ export function JobsTable() {
     'name',
   );
   const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
+  const [search, setSearch] = React.useState('');
 
   const data = useApplications();
 
@@ -64,6 +75,13 @@ export function JobsTable() {
           data={clickedRow}
         />
       )}
+      <TextField
+        size="small"
+        placeholder="Search by company"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        sx={{ mt: 3, width: 300 }}
+      />
       <div className="table-container">
         <table className="modern-table">
           <thead>
@@ -98,7 +116,10 @@ export function JobsTable() {
           </thead>
           <tbody>
             {data.data
-              ?.sort((a, b) => {
+              ?.filter((d) =>
+                (d.name ?? '').toLowerCase().includes(search.trim().toLowerCase()),
+              )
+              .sort((a, b) => {
                 if (sortColumn === 'date_applied') {
                   let aDate = new Date(a.date_applied ?? '').getTime();
                   let bDate = new Date(b.date_applied ?? '').getTime();
@@ -114,8 +135,8 @@ export function JobsTable() {
                     ? aVal.localeCompare(bVal)
                     : bVal.localeCompare(aVal);
                 } else {
-                  let aVal = a[sortColumn as keyof JobApplication] as string;
-                  let bVal = b[sortColumn as keyof JobApplication] as string;
+                  let aVal = (a[sortColumn as keyof JobApplication] as string) ?? '';
+                  let bVal = (b[sortColumn as keyof JobApplication] as string) ?? '';
                   return sortDirection === 'asc'
                     ? aVal.localeCompare(bVal)
                     : bVal.localeCompare(aVal);
@@ -128,6 +149,7 @@ export function JobsTable() {
                     <td>{d.name}</td>
                     <td>{d.role}</td>
                     <td>{new Date(d.date_applied ?? '').toLocaleDateString()}</td>
+                    <td>{sourceLabels[d.source ?? ''] ?? '—'}</td>
                     <td>
                       {latestEvent
                         ? `${latestEventLabel(d)} · ${dayjs(latestEvent.date).format('MMM D')}`

@@ -68,10 +68,14 @@ router.get('/applications/:id', async (req, res) => {
 // --- 4. UPDATE: Update application status or info (PUT /api/applications/:id) ---
 router.put('/applications/:id', async (req, res) => {
   const { id } = req.params;
-  const { name, status, role, location, salary_min, salary_max, date, events, notes } = req.body;
+  const { name, status, role, location, salary_min, salary_max, date, events, notes, source } = req.body;
 
   if (events !== undefined && !isValidEvents(events)) {
     return res.status(400).json({ error: 'Events must be an array of { type, date }' });
+  }
+
+  if (source !== undefined && !['inbound', 'outbound'].includes(source)) {
+    return res.status(400).json({ error: "Source must be 'inbound' or 'outbound'" });
   }
 
   try {
@@ -91,10 +95,11 @@ router.put('/applications/:id', async (req, res) => {
     const updatedEvents = events ?? checkApp.rows[0].events;
     // ?? rather than || so notes can be cleared with an empty string
     const updatedNotes = notes ?? checkApp.rows[0].notes;
+    const updatedSource = source ?? checkApp.rows[0].source;
 
     const result = await pool.query(
-      'UPDATE jobs.applications SET name = $1, status = $2, role = $4, location = $5, salary_min = $6, salary_max = $7, date_applied = $8, events = $9, notes = $10 WHERE id = $3 RETURNING *',
-      [updatedName, updatedStatus, id, updatedRole, updatedLocation, updatedSalaryMin, updatedSalaryMax, updatedDate, JSON.stringify(updatedEvents), updatedNotes]
+      'UPDATE jobs.applications SET name = $1, status = $2, role = $4, location = $5, salary_min = $6, salary_max = $7, date_applied = $8, events = $9, notes = $10, source = $11 WHERE id = $3 RETURNING *',
+      [updatedName, updatedStatus, id, updatedRole, updatedLocation, updatedSalaryMin, updatedSalaryMax, updatedDate, JSON.stringify(updatedEvents), updatedNotes, updatedSource]
     );
 
     res.json({ message: 'Application updated!', application: result.rows[0] });

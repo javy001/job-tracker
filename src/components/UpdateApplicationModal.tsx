@@ -6,6 +6,11 @@ import TextField from '@mui/material/TextField';
 import Slider from '@mui/material/Slider';
 import MenuItem from '@mui/material/MenuItem';
 import IconButton from '@mui/material/IconButton';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogActions from '@mui/material/DialogActions';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import AddIcon from '@mui/icons-material/Add';
 import type { ApplicationEvent, ApplicationEventType, JobApplication } from '../types';
@@ -39,6 +44,7 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
   const [companyName, setCompanyName] = React.useState<string | null>(data.name);
   const [role, setRole] = React.useState<string | null>(data.role);
   const [location, setLocation] = React.useState<string | null>(data.location);
+  const [source, setSource] = React.useState<JobApplication['source']>(data.source);
   const [salaryRange, setSalaryRange] = React.useState<number[]>([
     data.salary_min ?? 100000,
     data.salary_max ?? 500000,
@@ -46,6 +52,8 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
   const [applicationDate, setApplicationDate] = React.useState(dayjs(data.date_applied));
   const [notes, setNotes] = React.useState<string>(data.notes ?? '');
   const [events, setEvents] = React.useState<ApplicationEvent[]>(data.events ?? []);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
 
   const queryClient = useQueryClient();
 
@@ -76,6 +84,7 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
         role: role,
         id: data.id,
         location: location,
+        source: source ?? undefined,
         date: applicationDate.toDate(),
         salary_min: salaryRange[0],
         salary_max: salaryRange[1],
@@ -88,6 +97,23 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
       setRole(null);
       onClose();
     });
+  };
+
+  const deleteApplication = () => {
+    setDeleting(true);
+    fetch(`/api/applications/${data.id}`, { method: 'DELETE' })
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error('Failed to delete application');
+        }
+        queryClient.invalidateQueries({ queryKey: ['applications'] });
+        setConfirmDeleteOpen(false);
+        onClose();
+      })
+      .catch((err) => {
+        console.error(err);
+        setDeleting(false);
+      });
   };
 
   return (
@@ -121,6 +147,18 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
             value={location}
             autoComplete="off"
           />
+          <TextField
+            select
+            label="Source"
+            variant="outlined"
+            value={source ?? ''}
+            onChange={(e) => {
+              setSource(e.target.value as 'inbound' | 'outbound');
+            }}
+          >
+            <MenuItem value="outbound">Outbound</MenuItem>
+            <MenuItem value="inbound">Inbound</MenuItem>
+          </TextField>
           <DatePicker
             value={applicationDate}
             onChange={(val) => setApplicationDate(val)}
@@ -200,15 +238,47 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
             }}
             value={notes}
           />
-          <Button
-            size="small"
-            variant="contained"
-            disabled={!role?.length || !companyName?.length}
-            onClick={updateApplication}
-          >
-            Save
-          </Button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
+            <Button
+              size="small"
+              color="error"
+              startIcon={<DeleteOutlineIcon />}
+              onClick={() => setConfirmDeleteOpen(true)}
+            >
+              Delete
+            </Button>
+            <Button
+              size="small"
+              variant="contained"
+              disabled={!role?.length || !companyName?.length}
+              onClick={updateApplication}
+            >
+              Save
+            </Button>
+          </div>
         </div>
+        <Dialog open={confirmDeleteOpen} onClose={() => setConfirmDeleteOpen(false)}>
+          <DialogTitle>Delete application?</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              This will permanently delete the {data.role} application at {data.name},
+              including its events and notes. This can't be undone.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setConfirmDeleteOpen(false)} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button
+              color="error"
+              variant="contained"
+              onClick={deleteApplication}
+              disabled={deleting}
+            >
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     </Modal>
   );
