@@ -24,5 +24,6 @@ export type ApplicationEventType =
 export interface ApplicationEvent {
   type: ApplicationEventType;
   date: string; // YYYY-MM-DD
+  time?: string | null; // HH:mm (24h), optional
   notes?: string;
 }

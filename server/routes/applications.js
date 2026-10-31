@@ -3,11 +3,19 @@ const router = express.Router();
 const pool = require('../db'); // Your PostgreSQL pool file
 const { v4: uuidv4 } = require('uuid'); // Import UUID generator
 
-// Events must be an array of { type, date, notes? } objects
+// Events must be an array of { type, date, time?, notes? } objects; time is HH:mm (24h)
+const isValidTime = (time) =>
+  time === undefined || time === null || /^([01]\d|2[0-3]):[0-5]\d$/.test(time);
+
 const isValidEvents = (events) =>
   Array.isArray(events) &&
   events.every(
-    (e) => e && typeof e.type === 'string' && e.type.length > 0 && !isNaN(Date.parse(e.date))
+    (e) =>
+      e &&
+      typeof e.type === 'string' &&
+      e.type.length > 0 &&
+      !isNaN(Date.parse(e.date)) &&
+      isValidTime(e.time)
   );
 
 // --- 1. CREATE: Submit a new application (POST /api/applications) ---

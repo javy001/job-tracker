@@ -16,7 +16,8 @@ import AddIcon from '@mui/icons-material/Add';
 import type { ApplicationEvent, ApplicationEventType, JobApplication } from '../types';
 import { useQueryClient } from '@tanstack/react-query';
 import { DatePicker } from './DatePicker';
-import { eventTypes } from '../eventTypes';
+import { TimePicker } from './TimePicker';
+import { eventSortKey, eventTypes } from '../eventTypes';
 import dayjs from 'dayjs';
 
 const style = {
@@ -89,7 +90,7 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
         salary_min: salaryRange[0],
         salary_max: salaryRange[1],
         notes: notes,
-        events: [...events].sort((a, b) => a.date.localeCompare(b.date)),
+        events: [...events].sort((a, b) => eventSortKey(a).localeCompare(eventSortKey(b))),
       }),
     }).then(() => {
       queryClient.invalidateQueries({ queryKey: ['applications'] });
@@ -209,14 +210,20 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
                     </MenuItem>
                   ))}
                 </TextField>
+                <IconButton aria-label="Remove event" onClick={() => removeEvent(i)}>
+                  <DeleteOutlineIcon />
+                </IconButton>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
                 <DatePicker
                   label="Date"
                   value={dayjs(e.date)}
                   onChange={(val) => updateEvent(i, { date: val.format('YYYY-MM-DD') })}
                 />
-                <IconButton aria-label="Remove event" onClick={() => removeEvent(i)}>
-                  <DeleteOutlineIcon />
-                </IconButton>
+                <TimePicker
+                  value={e.time ? dayjs(`${e.date}T${e.time}`) : null}
+                  onChange={(val) => updateEvent(i, { time: val ? val.format('HH:mm') : null })}
+                />
               </div>
               <TextField
                 label="Event Notes"

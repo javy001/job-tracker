@@ -3,7 +3,7 @@ import { Card } from './Card';
 import { UpdateApplicationModal } from './UpdateApplicationModal';
 import { useApplications } from '../hooks/useApplications';
 import type { JobApplication } from '../types';
-import { closingEventTypes, eventTypes } from '../eventTypes';
+import { closingEventTypes, eventTypes, formatEventTime } from '../eventTypes';
 import * as d3 from 'd3';
 import dayjs from 'dayjs';
 
@@ -340,6 +340,7 @@ export function PipelineTimeline() {
                 }}
               ></div>
               {eventTypes[e.type]?.label ?? e.type} · {dayjs(e.date).format('ddd, MMM D')}
+              {e.time && ` · ${formatEventTime(e)}`}
             </div>
           ))}
         </Card>

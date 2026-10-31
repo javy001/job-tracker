@@ -5,7 +5,7 @@ import IconButton from '@mui/material/IconButton';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import type { ApplicationEvent, JobApplication } from '../types';
-import { eventTypes } from '../eventTypes';
+import { eventSortKey, eventTypes, formatEventTime } from '../eventTypes';
 import { UpdateApplicationModal } from './UpdateApplicationModal';
 import { useApplications } from '../hooks/useApplications';
 
@@ -42,6 +42,11 @@ export function WeekCalendar() {
       const key = dayjs(event.date).format('YYYY-MM-DD');
       eventsByDate.set(key, [...(eventsByDate.get(key) ?? []), { application, event }]);
     }
+  }
+
+  // Within each day, list events in time-of-day order (untimed events first)
+  for (const events of eventsByDate.values()) {
+    events.sort((a, b) => eventSortKey(a.event).localeCompare(eventSortKey(b.event)));
   }
 
   const weekLabel = `${monday.format('MMM D')} – ${days[4].format('MMM D, YYYY')}`;
@@ -99,6 +104,9 @@ export function WeekCalendar() {
                   <div className="week-calendar-event-type">
                     {eventTypes[event.type]?.label ?? event.type}
                   </div>
+                  {event.time && (
+                    <div className="week-calendar-event-time">{formatEventTime(event)}</div>
+                  )}
                   <div>{application.name}</div>
                   <div className="week-calendar-event-role">{application.role}</div>
                 </div>

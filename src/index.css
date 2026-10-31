@@ -194,6 +194,11 @@ body {
   font-weight: 600;
 }
 
+.week-calendar-event-time {
+  color: #64748b;
+  font-size: 0.9em;
+}
+
 .week-calendar-event-role {
   color: #94a3b8;
 }
