@@ -169,6 +169,33 @@ export function PipelineTimeline() {
     </g>
   );
 
+  // Shade each Saturday–Sunday span, clipped to the chart's date range
+  const weekendBands = d3.timeSaturday
+    .range(d3.timeDay.offset(xMin, -1), xMax)
+    .map((saturday) => {
+      const x1 = xScale(saturday < xMin ? xMin : saturday);
+      const monday = d3.timeDay.offset(saturday, 2);
+      const x2 = xScale(monday > xMax ? xMax : monday);
+      return { key: saturday.toISOString(), x: x1, width: x2 - x1 };
+    })
+    .filter((band) => band.width > 0);
+
+  const weekends = (
+    <g>
+      {weekendBands.map((band) => (
+        <rect
+          key={band.key}
+          x={band.x}
+          y={margins.top}
+          width={band.width}
+          height={height - margins.top - margins.bottom}
+          fill={axisColor}
+          opacity={0.15}
+        />
+      ))}
+    </g>
+  );
+
   const todayLine = (
     <g>
       <line
@@ -183,7 +210,7 @@ export function PipelineTimeline() {
         x={xScale(today)}
         y={margins.top - 6}
         fontSize={fontSize}
-        textAnchor="end"
+        textAnchor="middle"
         fill={fontColor}
       >
         Today
@@ -362,6 +389,7 @@ export function PipelineTimeline() {
         {legend}
         <div ref={containerRef} style={{ position: 'relative' }}>
           <svg height={height} width={width}>
+            {weekends}
             {xAxis}
             {todayLine}
             {rows}
