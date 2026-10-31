@@ -202,3 +202,164 @@ body {
 .week-calendar-event-role {
   color: #94a3b8;
 }
+
+.flashcards {
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.flashcards-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.flashcards-title {
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+}
+
+.flashcards-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.flashcards-count {
+  color: #1e293b;
+  font-size: 0.9rem;
+  font-weight: 500;
+  min-width: 60px;
+  text-align: center;
+}
+
+.flashcards-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.flashcards-side {
+  min-height: 160px;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  background-color: #f8fafc;
+  color: #334155;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.flashcards-label {
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.flashcards-card-title,
+.flashcards-pattern {
+  color: #1e293b;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.flashcards-complexity {
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.flashcards-hidden {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flashcards-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.flashcards-progress {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.flashcards-got {
+  color: #15803d;
+}
+
+.flashcards-missed {
+  color: #b91c1c;
+}
+
+.flashcards-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.flashcards-badge {
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.flashcards-badge-got {
+  background-color: #dcfce7;
+  color: #15803d;
+}
+
+.flashcards-badge-missed {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.flashcards-actions {
+  margin-top: auto;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.flashcards-empty {
+  padding: 2rem;
+  border-radius: 6px;
+  background-color: #f8fafc;
+  color: #94a3b8;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.flashcards-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.flashcards-side code {
+  padding: 0.05rem 0.3rem;
+  border-radius: 4px;
+  background-color: #e2e8f0;
+  color: #0f172a;
+  font-size: 0.85em;
+}

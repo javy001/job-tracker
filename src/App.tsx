@@ -6,6 +6,7 @@ import { JobsTable } from './components/JobsTable';
 import { MetricCards } from './components/MetricCards';
 import { PipelineTimeline } from './components/PipelineTimeline';
 import { WeekCalendar } from './components/WeekCalendar';
+import { Flashcards } from './components/Flashcards';
 
 function App() {
   const [showModal, setShowModal] = React.useState(false);
@@ -34,6 +35,7 @@ function App() {
       >
         <JobsTable />
         <PipelineTimeline />
+        <Flashcards />
         {/* <SalaryRangeChart /> */}
       </div>
     </>
