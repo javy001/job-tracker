@@ -13,6 +13,7 @@ import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import { algorithmCards, type Flashcard, type FlashcardResult } from '../flashcards';
 import { frontendCards } from '../frontendFlashcards';
+import { CodeBlock } from './CodeBlock';
 
 const storageKey = 'flashcard-results';
 
@@ -260,6 +261,9 @@ export function Flashcards({ onClose }: Props) {
               <>
                 <div className="flashcards-pattern">{withCode(card.pattern)}</div>
                 <div>{withCode(card.approach)}</div>
+                {card.solution && (
+                  <CodeBlock code={card.solution} />
+                )}
                 {card.complexity && (
                   <div className="flashcards-complexity">{card.complexity}</div>
                 )}
