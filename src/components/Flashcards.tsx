@@ -8,6 +8,7 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ShuffleIcon from '@mui/icons-material/Shuffle';
+import CloseIcon from '@mui/icons-material/Close';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import { algorithmCards, type Flashcard, type FlashcardResult } from '../flashcards';
@@ -54,7 +55,11 @@ const firstUnseenIndex = (cards: Flashcard[], results: Record<string, FlashcardR
     0,
   );
 
-export function Flashcards() {
+interface Props {
+  onClose?: () => void;
+}
+
+export function Flashcards({ onClose }: Props) {
   const [deckName, setDeckName] = React.useState<DeckName>('algorithms');
   const source = decks[deckName].cards;
   const categories = getCategories(source);
@@ -176,6 +181,16 @@ export function Flashcards() {
           >
             <ChevronRightIcon fontSize="small" />
           </IconButton>
+          {onClose && (
+            <IconButton
+              size="small"
+              aria-label="Close flashcards"
+              onClick={onClose}
+              style={{ marginLeft: '0.5rem' }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          )}
         </div>
       </div>
       <div className="flashcards-toolbar">

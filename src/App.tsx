@@ -1,5 +1,6 @@
 import React from 'react';
 import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
 import { AddApplicationModal } from './components/AddApplicationModal';
 import { JobsTable } from './components/JobsTable';
 // import { SalaryRangeChart } from './components/SalaryRangeChart';
@@ -10,12 +11,16 @@ import { Flashcards } from './components/Flashcards';
 
 function App() {
   const [showModal, setShowModal] = React.useState(false);
+  const [showFlashcards, setShowFlashcards] = React.useState(false);
 
   return (
     <>
-      <div>
+      <div style={{ display: 'flex', gap: '8px' }}>
         <Button size="small" variant="outlined" onClick={() => setShowModal(true)}>
           Add Application
+        </Button>
+        <Button size="small" variant="outlined" onClick={() => setShowFlashcards(true)}>
+          Study Flashcards
         </Button>
       </div>
       <div style={{ marginTop: '10px' }}>
@@ -25,6 +30,14 @@ function App() {
         <MetricCards />
       </div>
       <AddApplicationModal open={showModal} onClose={() => setShowModal(false)} />
+      <Dialog
+        open={showFlashcards}
+        onClose={() => setShowFlashcards(false)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <Flashcards onClose={() => setShowFlashcards(false)} />
+      </Dialog>
       <div
         style={{
           marginTop: '10px',
@@ -35,7 +48,6 @@ function App() {
       >
         <JobsTable />
         <PipelineTimeline />
-        <Flashcards />
         {/* <SalaryRangeChart /> */}
       </div>
     </>
