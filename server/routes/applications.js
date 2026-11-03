@@ -82,6 +82,15 @@ router.put('/applications/:id', async (req, res) => {
     return res.status(400).json({ error: 'Events must be an array of { type, date }' });
   }
 
+  const isValidSalary = (val) =>
+    val === undefined || val === null || (typeof val === 'number' && Number.isFinite(val) && val >= 0);
+  if (!isValidSalary(salary_min) || !isValidSalary(salary_max)) {
+    return res.status(400).json({ error: 'Salary must be a non-negative number or null' });
+  }
+  if (salary_min != null && salary_max != null && salary_min > salary_max) {
+    return res.status(400).json({ error: 'salary_min must be less than or equal to salary_max' });
+  }
+
   if (source !== undefined && !['inbound', 'outbound'].includes(source)) {
     return res.status(400).json({ error: "Source must be 'inbound' or 'outbound'" });
   }
@@ -97,8 +106,9 @@ router.put('/applications/:id', async (req, res) => {
     const updatedStatus = status || checkApp.rows[0].status;
     const updatedRole = role || checkApp.rows[0].role;
     const updatedLocation = location || checkApp.rows[0].location;
-    const updatedSalaryMin = salary_min || checkApp.rows[0].salary_min;
-    const updatedSalaryMax = salary_max || checkApp.rows[0].salary_max;
+    // !== undefined so the salary range can be cleared by sending null
+    const updatedSalaryMin = salary_min !== undefined ? salary_min : checkApp.rows[0].salary_min;
+    const updatedSalaryMax = salary_max !== undefined ? salary_max : checkApp.rows[0].salary_max;
     const updatedDate = date || checkApp.rows[0].date_applied;
     const updatedEvents = events ?? checkApp.rows[0].events;
     // ?? rather than || so notes can be cleared with an empty string

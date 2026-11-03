@@ -157,8 +157,11 @@ export function JobsTable() {
                     </td>
                     <td>{d.location}</td>
                     <td>
-                      {d.salary_min?.toLocaleString('en-US')} -{' '}
-                      {d.salary_max?.toLocaleString('en-US')}
+                      {d.salary_min == null && d.salary_max == null
+                        ? '—'
+                        : [d.salary_min, d.salary_max]
+                            .map((v) => (v == null ? '?' : Number(v).toLocaleString('en-US')))
+                            .join(' - ')}
                     </td>
                   </tr>
                 );

@@ -35,10 +35,11 @@ export function WeekCalendar() {
   const days = Array.from({ length: 5 }, (_, i) => monday.add(i, 'day'));
   const today = dayjs().format('YYYY-MM-DD');
 
-  // Group every event by its YYYY-MM-DD date
+  // Group every event by its YYYY-MM-DD date, leaving out rejections
   const eventsByDate = new Map<string, CalendarEvent[]>();
   for (const application of data) {
     for (const event of application.events) {
+      if (event.type === 'rejected') continue;
       const key = dayjs(event.date).format('YYYY-MM-DD');
       eventsByDate.set(key, [...(eventsByDate.get(key) ?? []), { application, event }]);
     }

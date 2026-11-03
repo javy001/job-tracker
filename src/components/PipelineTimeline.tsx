@@ -48,7 +48,7 @@ export function PipelineTimeline() {
   const [tooltipData, setTooltipData] = React.useState<JobApplication>();
   const [clickedRow, setClickedRow] = React.useState<JobApplication>();
   const [width, setWidth] = React.useState(900);
-  const [eventFilter, setEventFilter] = React.useState<EventFilter>('all');
+  const [eventFilter, setEventFilter] = React.useState<EventFilter>('with_events');
   const containerRef = React.useRef<HTMLDivElement>(null);
 
   // Track the container's width so the chart fills it and resizes with the window

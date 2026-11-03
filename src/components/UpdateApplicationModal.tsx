@@ -3,7 +3,7 @@ import Button from '@mui/material/Button';
 import Modal from '@mui/material/Modal';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
-import Slider from '@mui/material/Slider';
+import InputAdornment from '@mui/material/InputAdornment';
 import MenuItem from '@mui/material/MenuItem';
 import IconButton from '@mui/material/IconButton';
 import Dialog from '@mui/material/Dialog';
@@ -13,6 +13,7 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import AddIcon from '@mui/icons-material/Add';
+import ClearIcon from '@mui/icons-material/Clear';
 import type { ApplicationEvent, ApplicationEventType, JobApplication } from '../types';
 import { useQueryClient } from '@tanstack/react-query';
 import { DatePicker } from './DatePicker';
@@ -46,10 +47,13 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
   const [role, setRole] = React.useState<string | null>(data.role);
   const [location, setLocation] = React.useState<string | null>(data.location);
   const [source, setSource] = React.useState<JobApplication['source']>(data.source);
-  const [salaryRange, setSalaryRange] = React.useState<number[]>([
-    data.salary_min ?? 100000,
-    data.salary_max ?? 500000,
-  ]);
+  // Salary is optional: kept as strings so an empty input means "no value"
+  const [salaryMin, setSalaryMin] = React.useState<string>(
+    data.salary_min != null ? String(Number(data.salary_min)) : ''
+  );
+  const [salaryMax, setSalaryMax] = React.useState<string>(
+    data.salary_max != null ? String(Number(data.salary_max)) : ''
+  );
   const [applicationDate, setApplicationDate] = React.useState(dayjs(data.date_applied));
   const [notes, setNotes] = React.useState<string>(data.notes ?? '');
   const [events, setEvents] = React.useState<ApplicationEvent[]>(data.events ?? []);
@@ -57,6 +61,11 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
   const [deleting, setDeleting] = React.useState(false);
 
   const queryClient = useQueryClient();
+
+  const salaryInvalid =
+    salaryMin !== '' && salaryMax !== '' && Number(salaryMin) > Number(salaryMax);
+  const hasSalary = salaryMin !== '' || salaryMax !== '';
+  const toSalary = (val: string) => (val === '' ? null : Number(val));
 
   const updateEvent = (index: number, changes: Partial<ApplicationEvent>) => {
     setEvents((prev) => prev.map((e, i) => (i === index ? { ...e, ...changes } : e)));
@@ -87,8 +96,8 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
         location: location,
         source: source ?? undefined,
         date: applicationDate.toDate(),
-        salary_min: salaryRange[0],
-        salary_max: salaryRange[1],
+        salary_min: toSalary(salaryMin),
+        salary_max: toSalary(salaryMax),
         notes: notes,
         events: [...events].sort((a, b) => eventSortKey(a).localeCompare(eventSortKey(b))),
       }),
@@ -164,16 +173,53 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
             value={applicationDate}
             onChange={(val) => setApplicationDate(val)}
           />
-          Salary Range
-          <Slider
-            value={salaryRange}
-            valueLabelDisplay="auto"
-            max={Math.pow(10, 6)}
-            step={10000}
-            onChange={(_, val) => {
-              setSalaryRange(val);
-            }}
-          />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            Salary Range (optional)
+            {hasSalary && (
+              <Button
+                size="small"
+                color="error"
+                startIcon={<ClearIcon />}
+                onClick={() => {
+                  setSalaryMin('');
+                  setSalaryMax('');
+                }}
+              >
+                Clear
+              </Button>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <TextField
+              label="Min"
+              type="number"
+              size="small"
+              value={salaryMin}
+              onChange={(e) => setSalaryMin(e.target.value)}
+              error={salaryInvalid}
+              helperText={salaryInvalid ? 'Min must be ≤ max' : undefined}
+              autoComplete="off"
+              style={{ flex: 1 }}
+              slotProps={{
+                input: { startAdornment: <InputAdornment position="start">$</InputAdornment> },
+                htmlInput: { min: 0, step: 1000 },
+              }}
+            />
+            <TextField
+              label="Max"
+              type="number"
+              size="small"
+              value={salaryMax}
+              onChange={(e) => setSalaryMax(e.target.value)}
+              error={salaryInvalid}
+              autoComplete="off"
+              style={{ flex: 1 }}
+              slotProps={{
+                input: { startAdornment: <InputAdornment position="start">$</InputAdornment> },
+                htmlInput: { min: 0, step: 1000 },
+              }}
+            />
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             Interviews
             <Button size="small" startIcon={<AddIcon />} onClick={addEvent}>
@@ -257,7 +303,7 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
             <Button
               size="small"
               variant="contained"
-              disabled={!role?.length || !companyName?.length}
+              disabled={!role?.length || !companyName?.length || salaryInvalid}
               onClick={updateApplication}
             >
               Save
