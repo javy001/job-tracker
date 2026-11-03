@@ -47,7 +47,7 @@ export function AddApplicationModal({ open, onClose }: Props) {
         name: companyName,
         status: 'applied',
         role: role,
-        date: date.toDate(),
+        date: date.format('YYYY-MM-DD'),
         source
       }),
     }).then(() => {

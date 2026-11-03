@@ -95,7 +95,7 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
         id: data.id,
         location: location,
         source: source ?? undefined,
-        date: applicationDate.toDate(),
+        date: applicationDate.format('YYYY-MM-DD'),
         salary_min: toSalary(salaryMin),
         salary_max: toSalary(salaryMax),
         notes: notes,

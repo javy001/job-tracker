@@ -9,6 +9,9 @@ const pool = new Pool({
   port: 5432,                       // Default PostgreSQL port
 });
 
+// Return DATE columns as 'YYYY-MM-DD' strings instead of local-midnight Date objects
+pg.types.setTypeParser(1082, (val) => val);
+
 pg.types.setTypeParser(1700, function (val) {
   return parseFloat(val);
 });

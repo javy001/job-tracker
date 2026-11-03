@@ -2,7 +2,7 @@
 export interface JobApplication {
   id: string; // uuid NOT NULL
   name: string | null; // varchar(50) NULL
-  date_applied: string | null; // timestamp NULL (can also use string if handled as ISO string)
+  date_applied: string | null; // 'YYYY-MM-DD' (postgres date)
   status: string | null; // varchar(50) NULL
   role: string | null; // varchar(50) NULL
   location: string | null;

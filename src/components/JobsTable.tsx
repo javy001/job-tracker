@@ -148,7 +148,7 @@ export function JobsTable() {
                   <tr key={d.id} onClick={() => setClickedRow(d)}>
                     <td>{d.name}</td>
                     <td>{d.role}</td>
-                    <td>{new Date(d.date_applied ?? '').toLocaleDateString()}</td>
+                    <td>{d.date_applied ? dayjs(d.date_applied).format('M/D/YYYY') : '—'}</td>
                     <td>{sourceLabels[d.source ?? ''] ?? '—'}</td>
                     <td>
                       {latestEvent
