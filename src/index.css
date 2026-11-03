@@ -203,6 +203,25 @@ body {
   color: #94a3b8;
 }
 
+.follow-ups-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.5rem;
+}
+
+.follow-ups-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.follow-ups-days {
+  color: #64748b;
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+
 .flashcards {
   padding: 1rem 1.25rem;
   background-color: #ffffff;

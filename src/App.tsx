@@ -7,6 +7,7 @@ import { JobsTable } from './components/JobsTable';
 import { MetricCards } from './components/MetricCards';
 import { PipelineTimeline } from './components/PipelineTimeline';
 import { WeekCalendar } from './components/WeekCalendar';
+import { PendingFollowUps } from './components/PendingFollowUps';
 import { Flashcards } from './components/Flashcards';
 
 function App() {
@@ -25,6 +26,9 @@ function App() {
       </div>
       <div style={{ marginTop: '10px' }}>
         <WeekCalendar />
+      </div>
+      <div style={{ marginTop: '10px' }}>
+        <PendingFollowUps />
       </div>
       <div style={{ marginTop: '10px' }}>
         <MetricCards />

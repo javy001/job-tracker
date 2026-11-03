@@ -49,6 +49,8 @@ export function PipelineTimeline() {
   const [clickedRow, setClickedRow] = React.useState<JobApplication>();
   const [width, setWidth] = React.useState(900);
   const [eventFilter, setEventFilter] = React.useState<EventFilter>('with_events');
+  // Event types toggled off in the legend; applications with any of these are hidden
+  const [hiddenEventTypes, setHiddenEventTypes] = React.useState<Set<string>>(new Set());
   const containerRef = React.useRef<HTMLDivElement>(null);
 
   // Track the container's width so the chart fills it and resizes with the window
@@ -71,6 +73,7 @@ export function PipelineTimeline() {
       if (eventFilter === 'no_events') return d.events.length === 0;
       return true;
     })
+    .filter((d) => !d.events.some((e) => hiddenEventTypes.has(e.type)))
     .sort((a, b) => dayjs(a.date_applied).valueOf() - dayjs(b.date_applied).valueOf());
 
   const height = margins.top + margins.bottom + applications.length * rowHeight;
@@ -321,19 +324,48 @@ export function PipelineTimeline() {
         marginLeft: `${margins.left}px`,
       }}
     >
-      {Object.entries(eventTypes).map(([type, { label, color }]) => (
-        <div key={type} style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
-          <div
+      {Object.entries(eventTypes).map(([type, { label, color }]) => {
+        const hidden = hiddenEventTypes.has(type);
+        return (
+          <button
+            key={type}
+            type="button"
+            aria-pressed={!hidden}
+            title={hidden ? `Show applications with ${label}` : `Hide applications with ${label}`}
+            onClick={() =>
+              setHiddenEventTypes((prev) => {
+                const next = new Set(prev);
+                if (next.has(type)) next.delete(type);
+                else next.add(type);
+                return next;
+              })
+            }
             style={{
-              height: '10px',
-              width: '10px',
-              borderRadius: '50%',
-              backgroundColor: color,
+              display: 'flex',
+              gap: '5px',
+              alignItems: 'center',
+              padding: 0,
+              border: 'none',
+              background: 'none',
+              color: fontColor,
+              fontSize: `${fontSize}px`,
+              cursor: 'pointer',
+              opacity: hidden ? 0.4 : 1,
+              textDecoration: hidden ? 'line-through' : 'none',
             }}
-          ></div>
-          {label}
-        </div>
-      ))}
+          >
+            <div
+              style={{
+                height: '10px',
+                width: '10px',
+                borderRadius: '50%',
+                backgroundColor: hidden ? axisColor : color,
+              }}
+            ></div>
+            {label}
+          </button>
+        );
+      })}
     </div>
   );
 
