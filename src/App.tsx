@@ -49,9 +49,9 @@ function App() {
           flexDirection: 'column',
           gap: '10px',
         }}
-      >
-        <JobsTable />
+      >        
         <PipelineTimeline />
+        <JobsTable />
         {/* <SalaryRangeChart /> */}
       </div>
     </>

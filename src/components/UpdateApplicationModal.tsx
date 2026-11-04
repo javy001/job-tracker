@@ -226,7 +226,7 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
               Add Event
             </Button>
           </div>
-          {events.map((e, i) => (
+          {events.toReversed().map((e, i) => (
             <div
               key={i}
               style={{
