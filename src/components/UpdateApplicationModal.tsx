@@ -36,6 +36,12 @@ const style = {
   p: 4,
 };
 
+// Client-only id so React can track event rows across add/remove/reorder.
+// Stripped before saving, so it never reaches the server.
+type EditableEvent = ApplicationEvent & { _id: string };
+
+const withId = (e: ApplicationEvent): EditableEvent => ({ ...e, _id: crypto.randomUUID() });
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -56,7 +62,9 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
   );
   const [applicationDate, setApplicationDate] = React.useState(dayjs(data.date_applied));
   const [notes, setNotes] = React.useState<string>(data.notes ?? '');
-  const [events, setEvents] = React.useState<ApplicationEvent[]>(data.events ?? []);
+  const [events, setEvents] = React.useState<EditableEvent[]>(() =>
+    (data.events ?? []).map(withId)
+  );
   const [confirmDeleteOpen, setConfirmDeleteOpen] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
 
@@ -67,19 +75,19 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
   const hasSalary = salaryMin !== '' || salaryMax !== '';
   const toSalary = (val: string) => (val === '' ? null : Number(val));
 
-  const updateEvent = (index: number, changes: Partial<ApplicationEvent>) => {
-    setEvents((prev) => prev.map((e, i) => (i === index ? { ...e, ...changes } : e)));
+  const updateEvent = (id: string, changes: Partial<ApplicationEvent>) => {
+    setEvents((prev) => prev.map((e) => (e._id === id ? { ...e, ...changes } : e)));
   };
 
   const addEvent = () => {
     setEvents((prev) => [
       ...prev,
-      { type: 'phone_screen', date: dayjs().format('YYYY-MM-DD'), notes: '' },
+      withId({ type: 'phone_screen', date: dayjs().format('YYYY-MM-DD'), notes: '' }),
     ]);
   };
 
-  const removeEvent = (index: number) => {
-    setEvents((prev) => prev.filter((_, i) => i !== index));
+  const removeEvent = (id: string) => {
+    setEvents((prev) => prev.filter((e) => e._id !== id));
   };
 
   const updateApplication = () => {
@@ -99,7 +107,10 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
         salary_min: toSalary(salaryMin),
         salary_max: toSalary(salaryMax),
         notes: notes,
-        events: [...events].sort((a, b) => eventSortKey(a).localeCompare(eventSortKey(b))),
+        events: events
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          .map(({ _id, ...e }) => e)
+          .sort((a, b) => eventSortKey(a).localeCompare(eventSortKey(b))),
       }),
     }).then(() => {
       queryClient.invalidateQueries({ queryKey: ['applications'] });
@@ -226,9 +237,9 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
               Add Event
             </Button>
           </div>
-          {events.toReversed().map((e, i) => (
+          {events.toReversed().map((e) => (
             <div
-              key={i}
+              key={e._id}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -246,7 +257,7 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
                   size="small"
                   value={e.type}
                   onChange={(ev) =>
-                    updateEvent(i, { type: ev.target.value as ApplicationEventType })
+                    updateEvent(e._id, { type: ev.target.value as ApplicationEventType })
                   }
                   style={{ flex: 1 }}
                 >
@@ -256,7 +267,7 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
                     </MenuItem>
                   ))}
                 </TextField>
-                <IconButton aria-label="Remove event" onClick={() => removeEvent(i)}>
+                <IconButton aria-label="Remove event" onClick={() => removeEvent(e._id)}>
                   <DeleteOutlineIcon />
                 </IconButton>
               </div>
@@ -264,18 +275,18 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
                 <DatePicker
                   label="Date"
                   value={dayjs(e.date)}
-                  onChange={(val) => updateEvent(i, { date: val.format('YYYY-MM-DD') })}
+                  onChange={(val) => updateEvent(e._id, { date: val.format('YYYY-MM-DD') })}
                 />
                 <TimePicker
                   value={e.time ? dayjs(`${e.date}T${e.time}`) : null}
-                  onChange={(val) => updateEvent(i, { time: val ? val.format('HH:mm') : null })}
+                  onChange={(val) => updateEvent(e._id, { time: val ? val.format('HH:mm') : null })}
                 />
               </div>
               <TextField
                 label="Event Notes"
                 size="small"
                 value={e.notes ?? ''}
-                onChange={(ev) => updateEvent(i, { notes: ev.target.value })}
+                onChange={(ev) => updateEvent(e._id, { notes: ev.target.value })}
                 autoComplete="off"
               />
             </div>
