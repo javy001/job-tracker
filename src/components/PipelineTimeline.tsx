@@ -76,6 +76,8 @@ export function PipelineTimeline() {
     .filter((d) => !d.events.some((e) => hiddenEventTypes.has(e.type)))
     .sort((a, b) => dayjs(a.date_applied).valueOf() - dayjs(b.date_applied).valueOf());
 
+  const totalCount = data.data?.length ?? 0;
+
   const height = margins.top + margins.bottom + applications.length * rowHeight;
 
   const xMin =
@@ -284,6 +286,7 @@ export function PipelineTimeline() {
         display: 'flex',
         gap: '6px',
         fontSize: `${fontSize}px`,
+        alignItems: 'center',
         marginBottom: '10px',
         marginLeft: `${margins.left}px`,
       }}
@@ -309,6 +312,11 @@ export function PipelineTimeline() {
           </button>
         );
       })}
+      <div style={{ marginLeft: 'auto', color: fontColor }}>
+        <span style={{ fontWeight: 600 }}>{applications.length}</span>
+        {applications.length !== totalCount && ` of ${totalCount}`}{' '}
+        {totalCount === 1 ? 'application' : 'applications'}
+      </div>
     </div>
   );
 
