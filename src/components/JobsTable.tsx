@@ -6,7 +6,6 @@ import { UpdateApplicationModal } from './UpdateApplicationModal';
 import { useApplications } from '../hooks/useApplications';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
-import { TextField } from '@mui/material';
 
 const columns: { label: string; name: keyof JobApplication | string }[] = [
   {
@@ -56,13 +55,16 @@ const latestEventLabel = (d: JobApplication): string => {
   return e ? (eventTypes[e.type]?.label ?? e.type) : '';
 };
 
-export function JobsTable() {
+export function JobsTable({
+  filter,
+}: {
+  filter?: (d: JobApplication) => boolean;
+}) {
   const [clickedRow, setClickedRow] = React.useState<JobApplication>();
   const [sortColumn, setSortColumn] = React.useState<keyof JobApplication | string>(
     'name',
   );
   const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
-  const [search, setSearch] = React.useState('');
 
   const data = useApplications();
 
@@ -75,13 +77,6 @@ export function JobsTable() {
           data={clickedRow}
         />
       )}
-      <TextField
-        size="small"
-        placeholder="Search by company"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        sx={{ mt: 3, width: 300 }}
-      />
       <div className="table-container">
         <table className="modern-table">
           <thead>
@@ -116,9 +111,7 @@ export function JobsTable() {
           </thead>
           <tbody>
             {data.data
-              ?.filter((d) =>
-                (d.name ?? '').toLowerCase().includes(search.trim().toLowerCase()),
-              )
+              ?.filter((d) => !filter || filter(d))
               .sort((a, b) => {
                 if (sortColumn === 'date_applied') {
                   let aDate = new Date(a.date_applied ?? '').getTime();

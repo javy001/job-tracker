@@ -1,18 +1,32 @@
 import { useApplications } from '../hooks/useApplications';
+import { metricFilters, type MetricFilter } from '../metricFilters';
 
 interface MetricCardProps {
   label: string;
   value: number;
   detail?: string;
+  selected?: boolean;
+  onClick?: () => void;
 }
 
-function MetricCard({ label, value, detail }: MetricCardProps) {
-  return (
-    <div className="metric-card">
+function MetricCard({ label, value, detail, selected, onClick }: MetricCardProps) {
+  const content = (
+    <>
       <div className="metric-card-label">{label}</div>
       <div className="metric-card-value">{value}</div>
       {detail && <div className="metric-card-detail">{detail}</div>}
-    </div>
+    </>
+  );
+  if (!onClick) return <div className="metric-card">{content}</div>;
+  return (
+    <button
+      type="button"
+      className={`metric-card metric-card-clickable${selected ? ' selected' : ''}`}
+      aria-pressed={selected}
+      onClick={onClick}
+    >
+      {content}
+    </button>
   );
 }
 
@@ -22,34 +36,57 @@ const responseRate = (responses: number, total: number) =>
     ? `${Math.round((responses / total) * 100)}% of ${total} applications`
     : undefined;
 
-export function MetricCards() {
+interface MetricCardsProps {
+  filter: MetricFilter | null;
+  onFilterChange: (filter: MetricFilter | null) => void;
+}
+
+export function MetricCards({ filter, onFilterChange }: MetricCardsProps) {
   const { data = [] } = useApplications();
   const companies = new Set(data.map((d) => d.name));
-  // An application counts as a response once it has any event
-  const responses = data.filter((d) => d.events.length > 0);
   const inbound = data.filter((d) => d.source === 'inbound');
   const outbound = data.filter((d) => d.source === 'outbound');
-  const inboundResponses = inbound.filter((d) => d.events.length > 0);
-  const outboundResponses = outbound.filter((d) => d.events.length > 0);
+  const count = (f: MetricFilter) => data.filter(metricFilters[f]).length;
+
+  // Clicking the active card again clears the filter
+  const toggle = (f: MetricFilter) => () => onFilterChange(filter === f ? null : f);
 
   return (
     <div className="metric-cards">
-      <MetricCard label="Applications" value={data.length} />
+      <MetricCard
+        label="Applications"
+        value={data.length}
+        selected={filter === null}
+        onClick={() => onFilterChange(null)}
+      />
       <MetricCard label="Companies" value={companies.size} />
       <MetricCard
         label="Responses"
-        value={responses.length}
-        detail={responseRate(responses.length, data.length)}
+        value={count('responses')}
+        detail={responseRate(count('responses'), data.length)}
+        selected={filter === 'responses'}
+        onClick={toggle('responses')}
       />
       <MetricCard
         label="Inbound Responses"
-        value={inboundResponses.length}
-        detail={responseRate(inboundResponses.length, inbound.length)}
+        value={count('inboundResponses')}
+        detail={responseRate(count('inboundResponses'), inbound.length)}
+        selected={filter === 'inboundResponses'}
+        onClick={toggle('inboundResponses')}
       />
       <MetricCard
         label="Outbound Responses"
-        value={outboundResponses.length}
-        detail={responseRate(outboundResponses.length, outbound.length)}
+        value={count('outboundResponses')}
+        detail={responseRate(count('outboundResponses'), outbound.length)}
+        selected={filter === 'outboundResponses'}
+        onClick={toggle('outboundResponses')}
+      />
+      <MetricCard
+        label="Rejected"
+        value={count('rejected')}
+        detail={responseRate(count('rejected'), data.length)}
+        selected={filter === 'rejected'}
+        onClick={toggle('rejected')}
       />
     </div>
   );
