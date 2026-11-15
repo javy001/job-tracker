@@ -50,7 +50,7 @@ export function PipelineTimeline() {
   const [width, setWidth] = React.useState(900);
   const [eventFilter, setEventFilter] = React.useState<EventFilter>('with_events');
   // Event types toggled off in the legend; applications with any of these are hidden
-  const [hiddenEventTypes, setHiddenEventTypes] = React.useState<Set<string>>(new Set());
+  const [hiddenEventTypes, setHiddenEventTypes] = React.useState<Set<string>>(new Set(['rejected']));
   const containerRef = React.useRef<HTMLDivElement>(null);
 
   // Track the container's width so the chart fills it and resizes with the window
