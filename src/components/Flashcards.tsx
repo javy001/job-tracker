@@ -13,15 +13,17 @@ import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import { algorithmCards, type Flashcard, type FlashcardResult } from '../flashcards';
 import { frontendCards } from '../frontendFlashcards';
+import { systemDesignCards } from '../systemDesignFlashcards';
 import { CodeBlock } from './CodeBlock';
 
 const storageKey = 'flashcard-results';
 
-type DeckName = 'algorithms' | 'frontend';
+type DeckName = 'algorithms' | 'frontend' | 'systemDesign';
 
 const decks: Record<DeckName, { label: string; cards: Flashcard[] }> = {
   algorithms: { label: 'Algorithms', cards: algorithmCards },
   frontend: { label: 'Front End', cards: frontendCards },
+  systemDesign: { label: 'System Design', cards: systemDesignCards },
 };
 
 const getCategories = (cards: Flashcard[]) =>

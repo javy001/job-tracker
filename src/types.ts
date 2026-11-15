@@ -10,6 +10,8 @@ export interface JobApplication {
   salary_max: number | null;
   notes: string | null;
   source: 'inbound' | 'outbound' | null;
+  point_of_contact_name: string | null; // text NULL
+  point_of_contact_email: string | null; // text NULL
   events: ApplicationEvent[]; // jsonb NOT NULL DEFAULT '[]'
 }
 

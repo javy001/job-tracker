@@ -20,6 +20,7 @@ import { DatePicker } from './DatePicker';
 import { TimePicker } from './TimePicker';
 import { eventSortKey, eventTypes } from '../eventTypes';
 import dayjs from 'dayjs';
+import { isValidEmail } from '../validation';
 
 const style = {
   position: 'absolute',
@@ -53,6 +54,10 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
   const [role, setRole] = React.useState<string | null>(data.role);
   const [location, setLocation] = React.useState<string | null>(data.location);
   const [source, setSource] = React.useState<JobApplication['source']>(data.source);
+  const [contactName, setContactName] = React.useState<string>(data.point_of_contact_name ?? '');
+  const [contactEmail, setContactEmail] = React.useState<string>(
+    data.point_of_contact_email ?? ''
+  );
   // Salary is optional: kept as strings so an empty input means "no value"
   const [salaryMin, setSalaryMin] = React.useState<string>(
     data.salary_min != null ? String(Number(data.salary_min)) : ''
@@ -72,6 +77,7 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
 
   const salaryInvalid =
     salaryMin !== '' && salaryMax !== '' && Number(salaryMin) > Number(salaryMax);
+  const emailInvalid = !isValidEmail(contactEmail);
   const hasSalary = salaryMin !== '' || salaryMax !== '';
   const toSalary = (val: string) => (val === '' ? null : Number(val));
 
@@ -107,6 +113,8 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
         salary_min: toSalary(salaryMin),
         salary_max: toSalary(salaryMax),
         notes: notes,
+        point_of_contact_name: contactName.trim(),
+        point_of_contact_email: contactEmail.trim(),
         events: events
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           .map(({ _id, ...e }) => e)
@@ -168,6 +176,27 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
             value={location}
             autoComplete="off"
           />
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <TextField
+              label="Contact Name"
+              variant="outlined"
+              value={contactName}
+              onChange={(e) => setContactName(e.target.value)}
+              style={{ flex: 1 }}
+              autoComplete="off"
+            />
+            <TextField
+              label="Contact Email"
+              type="email"
+              variant="outlined"
+              value={contactEmail}
+              onChange={(e) => setContactEmail(e.target.value)}
+              error={emailInvalid}
+              helperText={emailInvalid ? 'Enter a valid email' : undefined}
+              style={{ flex: 1 }}
+              autoComplete="off"
+            />
+          </div>
           <TextField
             select
             label="Source"
@@ -314,7 +343,7 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
             <Button
               size="small"
               variant="contained"
-              disabled={!role?.length || !companyName?.length || salaryInvalid}
+              disabled={!role?.length || !companyName?.length || salaryInvalid || emailInvalid}
               onClick={updateApplication}
             >
               Save
