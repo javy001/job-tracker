@@ -3,9 +3,15 @@ const router = express.Router();
 const pool = require('../db'); // Your PostgreSQL pool file
 const { v4: uuidv4 } = require('uuid'); // Import UUID generator
 
-// Events must be an array of { type, date, time?, notes? } objects; time is HH:mm (24h)
+// Events must be an array of { type, date, time?, duration?, notes? } objects;
+// time is HH:mm (24h), duration is a positive whole number of minutes
 const isValidTime = (time) =>
   time === undefined || time === null || /^([01]\d|2[0-3]):[0-5]\d$/.test(time);
+
+const isValidDuration = (duration) =>
+  duration === undefined ||
+  duration === null ||
+  (Number.isInteger(duration) && duration > 0 && duration <= 24 * 60);
 
 const isValidEvents = (events) =>
   Array.isArray(events) &&
@@ -15,7 +21,8 @@ const isValidEvents = (events) =>
       typeof e.type === 'string' &&
       e.type.length > 0 &&
       !isNaN(Date.parse(e.date)) &&
-      isValidTime(e.time)
+      isValidTime(e.time) &&
+      isValidDuration(e.duration)
   );
 
 const isValidSalary = (val) =>

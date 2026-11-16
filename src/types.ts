@@ -27,5 +27,6 @@ export interface ApplicationEvent {
   type: ApplicationEventType;
   date: string; // YYYY-MM-DD
   time?: string | null; // HH:mm (24h), optional
+  duration?: number | null; // minutes, optional (treated as 60 when missing)
   notes?: string;
 }

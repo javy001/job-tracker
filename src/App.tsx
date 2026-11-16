@@ -1,7 +1,6 @@
 import React from 'react';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
-import TextField from '@mui/material/TextField';
 import { CompanySearchContext } from './hooks/useApplications';
 import { AddApplicationModal } from './components/AddApplicationModal';
 import { JobsTable } from './components/JobsTable';
@@ -12,6 +11,7 @@ import { PipelineTimeline } from './components/PipelineTimeline';
 import { WeekCalendar } from './components/WeekCalendar';
 import { PendingFollowUps } from './components/PendingFollowUps';
 import { Flashcards } from './components/Flashcards';
+import { CompanySearch } from './components/CompanySearch';
 
 function App() {
   const [showModal, setShowModal] = React.useState(false);
@@ -39,13 +39,7 @@ function App() {
         <Button size="small" variant="outlined" onClick={() => setShowFlashcards(true)}>
           Study Flashcards
         </Button>
-        <TextField
-          size="small"
-          placeholder="Search by company"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          sx={{ width: 300 }}
-        />
+        <CompanySearch value={search} onChange={setSearch} />
       </div>
       <div style={{ marginTop: '10px' }}>
         <WeekCalendar />

@@ -18,7 +18,13 @@ import type { ApplicationEvent, ApplicationEventType, JobApplication } from '../
 import { useQueryClient } from '@tanstack/react-query';
 import { DatePicker } from './DatePicker';
 import { TimePicker } from './TimePicker';
-import { eventSortKey, eventTypes } from '../eventTypes';
+import {
+  DEFAULT_EVENT_DURATION,
+  durationOptions,
+  eventSortKey,
+  eventTypes,
+  formatDuration,
+} from '../eventTypes';
 import dayjs from 'dayjs';
 import { isValidEmail } from '../validation';
 
@@ -88,7 +94,12 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
   const addEvent = () => {
     setEvents((prev) => [
       ...prev,
-      withId({ type: 'phone_screen', date: dayjs().format('YYYY-MM-DD'), notes: '' }),
+      withId({
+        type: 'phone_screen',
+        date: dayjs().format('YYYY-MM-DD'),
+        duration: DEFAULT_EVENT_DURATION,
+        notes: '',
+      }),
     ]);
   };
 
@@ -310,6 +321,21 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
                   value={e.time ? dayjs(`${e.date}T${e.time}`) : null}
                   onChange={(val) => updateEvent(e._id, { time: val ? val.format('HH:mm') : null })}
                 />
+                <TextField
+                  select
+                  label="Duration"
+                  value={e.duration ?? DEFAULT_EVENT_DURATION}
+                  onChange={(ev) => updateEvent(e._id, { duration: Number(ev.target.value) })}
+                  style={{ minWidth: 110 }}
+                >
+                  {[...new Set([...durationOptions, e.duration ?? DEFAULT_EVENT_DURATION])]
+                    .sort((a, b) => a - b)
+                    .map((m) => (
+                      <MenuItem key={m} value={m}>
+                        {formatDuration(m)}
+                      </MenuItem>
+                    ))}
+                </TextField>
               </div>
               <TextField
                 label="Event Notes"
