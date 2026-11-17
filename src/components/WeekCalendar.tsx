@@ -45,7 +45,7 @@ interface PlacedEvent extends CalendarEvent {
 
 const DAY_START = 9 * 60; // the grid always covers at least 9:00 AM
 const DAY_END = 17 * 60; // ...through 5:00 PM
-const PX_PER_HOUR = 48;
+const PX_PER_HOUR = 65;
 const pxPerMinute = PX_PER_HOUR / 60;
 
 const toMinutes = (time: string) => {
