@@ -29,4 +29,20 @@ export interface ApplicationEvent {
   time?: string | null; // HH:mm (24h), optional
   duration?: number | null; // minutes, optional (treated as 60 when missing)
   notes?: string;
+  calendar_uid?: string; // iCalendar UID when linked from a calendar invite
+}
+
+// An event from the user's calendar feed that isn't linked to an application yet
+export interface CalendarInvite {
+  uid: string;
+  title: string;
+  description: string;
+  location: string;
+  date: string; // YYYY-MM-DD
+  time: string | null; // HH:mm, null for all-day events
+  duration: number | null; // minutes
+  organizer: string | null;
+  participants: string[];
+  suggestedType: ApplicationEventType;
+  suggestion: { applicationId: string; reason: string } | null;
 }

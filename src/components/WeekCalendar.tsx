@@ -13,6 +13,7 @@ import {
   formatEventTime,
 } from '../eventTypes';
 import { UpdateApplicationModal } from './UpdateApplicationModal';
+import { CalendarInvitesButton } from './CalendarInvites';
 import { useApplications } from '../hooks/useApplications';
 
 const barColor = '#94a3b8';
@@ -159,6 +160,7 @@ export function WeekCalendar() {
       <div className="week-calendar-header">
         <div className="week-calendar-title">Upcoming Events</div>
         <div className="week-calendar-nav">
+          <CalendarInvitesButton />
           <Button size="small" onClick={() => setMonday(getDefaultMonday())}>
             This week
           </Button>
