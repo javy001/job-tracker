@@ -14,13 +14,20 @@ import CloseIcon from '@mui/icons-material/Close';
 import EventAvailableIcon from '@mui/icons-material/EventAvailable';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ApplicationEventType, CalendarInvite, JobApplication } from '../types';
+import type {
+  ApplicationEventType,
+  CalendarChange,
+  CalendarInvite,
+  CalendarSlot,
+  JobApplication,
+} from '../types';
 import { eventTypes, formatDuration, formatEventTime } from '../eventTypes';
 import { fetchApplications } from '../hooks/useApplications';
 
 interface InvitesResponse {
   configured: boolean;
   invites: CalendarInvite[];
+  changes: CalendarChange[];
 }
 
 const fetchInvites = async (): Promise<InvitesResponse> => {
@@ -46,6 +53,16 @@ const post = async (path: string, body: unknown) => {
   if (!res.ok) throw new Error((await res.json()).error ?? 'Request failed');
 };
 
+// "Thu, Nov 20 · 11:00 AM · 45 min"
+const formatSlot = (slot: CalendarSlot) =>
+  [
+    dayjs(slot.date).format('ddd, MMM D'),
+    slot.time && dayjs(`2000-01-01T${slot.time}`).format('h:mm A'),
+    slot.duration && formatDuration(slot.duration),
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
 const appLabel = (app: JobApplication) => `${app.name ?? ''}${app.role ? ` — ${app.role}` : ''}`;
 
 // The user's choices for one invite before they click Link
@@ -54,17 +71,26 @@ interface Draft {
   type: ApplicationEventType;
 }
 
-// Button for the calendar header; the badge counts invites that match an application
+// Button for the calendar header; the badge counts invites that match an
+// application plus linked events whose invite was rescheduled or cancelled
 export function CalendarInvitesButton() {
   const { data } = useCalendarInvites();
   const [open, setOpen] = React.useState(false);
   const matchedCount = data?.invites.filter((i) => i.suggestion).length ?? 0;
+  const changeCount = data?.changes?.length ?? 0;
+  const tooltip =
+    [
+      matchedCount && `${matchedCount} new interview invite${matchedCount === 1 ? '' : 's'}`,
+      changeCount && `${changeCount} schedule change${changeCount === 1 ? '' : 's'}`,
+    ]
+      .filter(Boolean)
+      .join(', ') || 'Calendar invites';
 
   return (
     <>
-      <Tooltip title={matchedCount ? `${matchedCount} new interview invite(s)` : 'Calendar invites'}>
+      <Tooltip title={tooltip}>
         <IconButton size="small" aria-label="Calendar invites" onClick={() => setOpen(true)}>
-          <Badge badgeContent={matchedCount} color="primary">
+          <Badge badgeContent={matchedCount + changeCount} color="primary">
             <EventAvailableIcon fontSize="small" />
           </Badge>
         </IconButton>
@@ -96,6 +122,7 @@ function CalendarInvitesDialog({ onClose }: { onClose: () => void }) {
 
   const configured = invitesQuery.data?.configured !== false;
   const invites = invitesQuery.data?.invites ?? [];
+  const changes = invitesQuery.data?.changes ?? [];
   const matched = invites.filter((i) => i.suggestion);
   const visible = showAll ? invites : matched;
 
@@ -135,6 +162,78 @@ function CalendarInvitesDialog({ onClose }: { onClose: () => void }) {
 
   const dismiss = (invite: CalendarInvite) =>
     run(invite.uid, () => post('/api/calendar/invites/dismiss', { uid: invite.uid }));
+
+  const resolve = (change: CalendarChange, action: 'update' | 'keep' | 'remove') =>
+    run(`${change.applicationId}:${change.uid}`, () =>
+      post('/api/calendar/changes/resolve', {
+        applicationId: change.applicationId,
+        uid: change.uid,
+        kind: change.kind,
+        action,
+        to: change.to,
+      }),
+    );
+
+  const changesSection = changes.length > 0 && (
+    <>
+      <div className="calendar-invites-section-title">Schedule changes</div>
+      <div className="calendar-invites-list">
+        {changes.map((change) => {
+          const busyKey = `${change.applicationId}:${change.uid}`;
+          const busy = busyUid === busyKey;
+          const cancelled = change.kind === 'cancelled';
+          return (
+            <div
+              key={busyKey}
+              className="calendar-invite"
+              style={{ borderLeftColor: cancelled ? '#d62728' : '#f59e0b' }}
+            >
+              <div className="calendar-invite-info">
+                <div className="week-calendar-event-type">
+                  {change.applicationName} · {eventTypes[change.eventType]?.label ?? change.eventType}
+                </div>
+                <div className="week-calendar-event-role">{change.title}</div>
+                {cancelled ? (
+                  <div className="calendar-invite-change">
+                    Cancelled · was {formatSlot(change.from)}
+                  </div>
+                ) : (
+                  <div className="calendar-invite-change">
+                    <s>{formatSlot(change.from)}</s> → <strong>{formatSlot(change.to)}</strong>
+                  </div>
+                )}
+              </div>
+              <div className="calendar-invite-actions">
+                {cancelled ? (
+                  <Button
+                    size="small"
+                    variant="contained"
+                    color="error"
+                    disabled={busy}
+                    onClick={() => resolve(change, 'remove')}
+                  >
+                    Remove event
+                  </Button>
+                ) : (
+                  <Button
+                    size="small"
+                    variant="contained"
+                    disabled={busy}
+                    onClick={() => resolve(change, 'update')}
+                  >
+                    Update
+                  </Button>
+                )}
+                <Button size="small" disabled={busy} onClick={() => resolve(change, 'keep')}>
+                  Keep mine
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
 
   let body: React.ReactNode;
   if (!configured) {
@@ -262,6 +361,10 @@ function CalendarInvitesDialog({ onClose }: { onClose: () => void }) {
           <div className="calendar-invites-error">{invitesQuery.error.message}</div>
         )}
         {error && <div className="calendar-invites-error">{error}</div>}
+        {changesSection}
+        {configured && changes.length > 0 && (
+          <div className="calendar-invites-section-title">New invites</div>
+        )}
         {body}
       </DialogContent>
     </>

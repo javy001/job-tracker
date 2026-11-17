@@ -98,8 +98,9 @@ const fetchInvites = async () => {
 
     for (const ev of Object.values(parsed)) {
       if (ev.type !== 'VEVENT' || !ev.start || !ev.uid) continue;
-      // Interviews aren't recurring; skip series and cancelled events
-      if (ev.rrule || ev.recurrenceid || text(ev.status).toUpperCase() === 'CANCELLED') continue;
+      // Interviews aren't recurring; skip series. Cancelled events are kept
+      // (flagged) so linked events can be offered for removal.
+      if (ev.rrule || ev.recurrenceid) continue;
       const start = new Date(ev.start);
       if (start.getTime() < from || start.getTime() > to) continue;
 
@@ -119,16 +120,55 @@ const fetchInvites = async () => {
         organizer: emailsOf(ev.organizer)[0] ?? null,
         participants: [...new Set([...emailsOf(ev.organizer), ...emailsOf(ev.attendee)])],
         suggestedType: guessType(title),
+        cancelled: text(ev.status).toUpperCase() === 'CANCELLED',
       });
     }
   }
   return invites.sort((a, b) => `${a.date} ${a.time ?? ''}`.localeCompare(`${b.date} ${b.time ?? ''}`));
 };
 
-// --- GET /api/calendar/invites: feed events not yet linked or ignored ---
+// The parts of an event a reschedule can change
+const slotOf = (x) => ({ date: x.date, time: x.time ?? null, duration: x.duration ?? null });
+const sameSlot = (a, b) =>
+  a.date === b.date && (a.time ?? null) === (b.time ?? null) && (a.duration ?? null) === (b.duration ?? null);
+
+// Linked events whose invite has since moved or been cancelled. An event's
+// `calendar_ack` records an invite version the user chose to keep their own
+// details over ("Keep mine"), so that version isn't offered again.
+const findChanges = (invites, applications) => {
+  const byUid = new Map(invites.map((i) => [i.uid, i]));
+  const changes = [];
+  for (const app of applications) {
+    for (const event of app.events ?? []) {
+      const invite = event.calendar_uid && byUid.get(event.calendar_uid);
+      if (!invite) continue;
+      const ack = event.calendar_ack;
+      if (invite.cancelled) {
+        if (ack?.cancelled) continue;
+        changes.push({ kind: 'cancelled', ...changeBase(app, event, invite) });
+      } else if (!sameSlot(event, invite) && !(ack && !ack.cancelled && sameSlot(ack, invite))) {
+        changes.push({ kind: 'rescheduled', ...changeBase(app, event, invite) });
+      }
+    }
+  }
+  return changes;
+};
+
+const changeBase = (app, event, invite) => ({
+  applicationId: app.id,
+  applicationName: app.name,
+  eventType: event.type,
+  uid: invite.uid,
+  title: invite.title,
+  from: slotOf(event),
+  to: slotOf(invite),
+});
+
+// --- GET /api/calendar/invites: feed events not yet linked or ignored, plus
+// changes to linked ones ---
 router.get('/calendar/invites', async (req, res) => {
   if (feedUrls().length === 0) {
-    return res.json({ configured: false, invites: [] });
+    return res.json({ configured: false, invites: [], changes: [] });
   }
   try {
     const [invites, apps, dismissed] = await Promise.all([
@@ -142,14 +182,21 @@ router.get('/calendar/invites', async (req, res) => {
     }
 
     const pending = invites
-      .filter((i) => !handled.has(i.uid))
+      .filter((i) => !i.cancelled && !handled.has(i.uid))
       .map((i) => ({ ...i, suggestion: suggestApplication(i, apps.rows) }));
-    res.json({ configured: true, invites: pending });
+    res.json({ configured: true, invites: pending, changes: findChanges(invites, apps.rows) });
   } catch (err) {
     console.error(err);
     res.status(502).json({ error: `Could not load calendar feed: ${err.message}` });
   }
 });
+
+// { date: 'YYYY-MM-DD', time?: 'HH:mm' | null, duration?: minutes | null }
+const isValidSlot = (x) =>
+  !!x &&
+  /^\d{4}-\d{2}-\d{2}$/.test(x.date ?? '') &&
+  (x.time == null || /^([01]\d|2[0-3]):[0-5]\d$/.test(x.time)) &&
+  (x.duration == null || (Number.isInteger(x.duration) && x.duration > 0 && x.duration <= 1440));
 
 const VALID_TYPES = ['phone_screen', 'technical_screen', 'coding_interview', 'onsite', 'offer', 'rejected'];
 
@@ -159,13 +206,7 @@ router.post('/calendar/invites/link', async (req, res) => {
   if (!applicationId || !VALID_TYPES.includes(type)) {
     return res.status(400).json({ error: 'applicationId and a valid type are required' });
   }
-  if (
-    !invite ||
-    typeof invite.uid !== 'string' ||
-    !/^\d{4}-\d{2}-\d{2}$/.test(invite.date ?? '') ||
-    (invite.time != null && !/^([01]\d|2[0-3]):[0-5]\d$/.test(invite.time)) ||
-    (invite.duration != null && !(Number.isInteger(invite.duration) && invite.duration > 0 && invite.duration <= 1440))
-  ) {
+  if (!invite || typeof invite.uid !== 'string' || !isValidSlot(invite)) {
     return res.status(400).json({ error: 'invite must include uid, date, and valid time/duration' });
   }
 
@@ -213,6 +254,70 @@ router.post('/calendar/invites/dismiss', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Database server error occurred' });
+  }
+});
+
+// --- POST /api/calendar/changes/resolve: act on a rescheduled/cancelled invite ---
+// action 'update' moves the linked event to `to`; 'keep' leaves it as is and
+// remembers this invite version; 'remove' deletes the linked event.
+router.post('/calendar/changes/resolve', async (req, res) => {
+  const { applicationId, uid, action, kind, to } = req.body ?? {};
+  if (!applicationId || typeof uid !== 'string' || !['update', 'keep', 'remove'].includes(action)) {
+    return res.status(400).json({ error: 'applicationId, uid and action are required' });
+  }
+  if (action !== 'remove' && kind !== 'cancelled' && !isValidSlot(to)) {
+    return res.status(400).json({ error: 'to must include a valid date, time and duration' });
+  }
+  if (action === 'update' && kind === 'cancelled') {
+    return res.status(400).json({ error: 'A cancelled invite can only be kept or removed' });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const found = await client.query(
+      'SELECT events FROM jobs.applications WHERE id = $1 FOR UPDATE',
+      [applicationId]
+    );
+    if (found.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Application not found' });
+    }
+
+    const events = found.rows[0].events ?? [];
+    if (!events.some((e) => e.calendar_uid === uid)) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'No event on this application is linked to that invite' });
+    }
+
+    let updated;
+    if (action === 'remove') {
+      updated = events.filter((e) => e.calendar_uid !== uid);
+    } else if (action === 'update') {
+      // Taking the new time makes any earlier "Keep mine" moot
+      updated = events.map((e) => {
+        if (e.calendar_uid !== uid) return e;
+        const next = { ...e, ...slotOf(to) };
+        delete next.calendar_ack;
+        return next;
+      });
+    } else {
+      const ack = kind === 'cancelled' ? { cancelled: true } : slotOf(to);
+      updated = events.map((e) => (e.calendar_uid === uid ? { ...e, calendar_ack: ack } : e));
+    }
+
+    const result = await client.query(
+      'UPDATE jobs.applications SET events = $1 WHERE id = $2 RETURNING *',
+      [JSON.stringify(updated), applicationId]
+    );
+    await client.query('COMMIT');
+    res.json({ message: 'Change resolved', application: result.rows[0] });
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    console.error(err);
+    res.status(500).json({ error: 'Database server error occurred' });
+  } finally {
+    client.release();
   }
 });
 

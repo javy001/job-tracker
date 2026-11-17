@@ -30,6 +30,8 @@ export interface ApplicationEvent {
   duration?: number | null; // minutes, optional (treated as 60 when missing)
   notes?: string;
   calendar_uid?: string; // iCalendar UID when linked from a calendar invite
+  // Invite version the user chose to keep their own details over ("Keep mine")
+  calendar_ack?: { date: string; time: string | null; duration: number | null } | { cancelled: true };
 }
 
 // An event from the user's calendar feed that isn't linked to an application yet
@@ -45,4 +47,21 @@ export interface CalendarInvite {
   participants: string[];
   suggestedType: ApplicationEventType;
   suggestion: { applicationId: string; reason: string } | null;
+}
+export interface CalendarSlot {
+  date: string;
+  time: string | null;
+  duration: number | null;
+}
+
+// A linked event whose calendar invite has since moved or been cancelled
+export interface CalendarChange {
+  kind: 'rescheduled' | 'cancelled';
+  applicationId: string;
+  applicationName: string | null;
+  eventType: ApplicationEventType;
+  uid: string;
+  title: string;
+  from: CalendarSlot; // the event as saved in the app
+  to: CalendarSlot; // the invite as it is in the calendar now
 }

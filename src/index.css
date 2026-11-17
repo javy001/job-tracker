@@ -340,6 +340,28 @@ body {
   gap: 0.5rem;
 }
 
+.calendar-invites-section-title {
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  margin: 0.75rem 0 0.5rem;
+}
+
+.calendar-invites-section-title:first-child {
+  margin-top: 0;
+}
+
+.calendar-invite-change {
+  margin-top: 0.15rem;
+  color: #334155;
+}
+
+.calendar-invite-change s {
+  color: #94a3b8;
+}
+
 .calendar-invites-error {
   color: #dc2626;
   font-size: 0.8rem;
