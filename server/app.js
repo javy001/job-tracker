@@ -1,5 +1,6 @@
 const express = require('express');
 const applicationRouter = require('./routes/applications');
+const calendarRouter = require('./routes/calendar');
 const app = express();
 const PORT = process.env.PORT || 5001;
 
@@ -7,6 +8,7 @@ const PORT = process.env.PORT || 5001;
 app.use(express.json());
 
 app.use('/api', applicationRouter);
+app.use('/api', calendarRouter);
 
 // Start the server
 app.listen(PORT, (err) => {

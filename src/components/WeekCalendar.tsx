@@ -13,6 +13,7 @@ import {
   formatEventTime,
 } from '../eventTypes';
 import { UpdateApplicationModal } from './UpdateApplicationModal';
+import { CalendarInvitesButton } from './CalendarInvites';
 import { useApplications } from '../hooks/useApplications';
 
 const barColor = '#94a3b8';
@@ -44,7 +45,7 @@ interface PlacedEvent extends CalendarEvent {
 
 const DAY_START = 9 * 60; // the grid always covers at least 9:00 AM
 const DAY_END = 17 * 60; // ...through 5:00 PM
-const PX_PER_HOUR = 48;
+const PX_PER_HOUR = 65;
 const pxPerMinute = PX_PER_HOUR / 60;
 
 const toMinutes = (time: string) => {
@@ -159,6 +160,7 @@ export function WeekCalendar() {
       <div className="week-calendar-header">
         <div className="week-calendar-title">Upcoming Events</div>
         <div className="week-calendar-nav">
+          <CalendarInvitesButton />
           <Button size="small" onClick={() => setMonday(getDefaultMonday())}>
             This week
           </Button>
