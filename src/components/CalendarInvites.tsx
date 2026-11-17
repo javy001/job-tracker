@@ -27,6 +27,7 @@ import { fetchApplications } from '../hooks/useApplications';
 interface InvitesResponse {
   configured: boolean;
   invites: CalendarInvite[];
+  ignored: CalendarInvite[];
   changes: CalendarChange[];
 }
 
@@ -112,6 +113,7 @@ function CalendarInvitesDialog({ onClose }: { onClose: () => void }) {
   });
   const [drafts, setDrafts] = React.useState<Record<string, Draft>>({});
   const [showAll, setShowAll] = React.useState(false);
+  const [viewIgnored, setViewIgnored] = React.useState(false);
   const [busyUid, setBusyUid] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -122,9 +124,10 @@ function CalendarInvitesDialog({ onClose }: { onClose: () => void }) {
 
   const configured = invitesQuery.data?.configured !== false;
   const invites = invitesQuery.data?.invites ?? [];
+  const ignored = invitesQuery.data?.ignored ?? [];
   const changes = invitesQuery.data?.changes ?? [];
   const matched = invites.filter((i) => i.suggestion);
-  const visible = showAll ? invites : matched;
+  const visible = viewIgnored ? ignored : showAll ? invites : matched;
 
   const draftFor = (invite: CalendarInvite): Draft =>
     drafts[invite.uid] ?? {
@@ -163,6 +166,9 @@ function CalendarInvitesDialog({ onClose }: { onClose: () => void }) {
   const dismiss = (invite: CalendarInvite) =>
     run(invite.uid, () => post('/api/calendar/invites/dismiss', { uid: invite.uid }));
 
+  const restore = (invite: CalendarInvite) =>
+    run(invite.uid, () => post('/api/calendar/invites/restore', { uid: invite.uid }));
+
   const resolve = (change: CalendarChange, action: 'update' | 'keep' | 'remove') =>
     run(`${change.applicationId}:${change.uid}`, () =>
       post('/api/calendar/changes/resolve', {
@@ -174,7 +180,7 @@ function CalendarInvitesDialog({ onClose }: { onClose: () => void }) {
       }),
     );
 
-  const changesSection = changes.length > 0 && (
+  const changesSection = !viewIgnored && changes.length > 0 && (
     <>
       <div className="calendar-invites-section-title">Schedule changes</div>
       <div className="calendar-invites-list">
@@ -248,7 +254,11 @@ function CalendarInvitesDialog({ onClose }: { onClose: () => void }) {
   } else if (visible.length === 0) {
     body = (
       <div className="week-calendar-empty">
-        {invites.length ? 'No invites match an application' : 'No new calendar invites'}
+        {viewIgnored
+          ? 'No ignored invites'
+          : invites.length
+            ? 'No invites match an application'
+            : 'No new calendar invites'}
       </div>
     );
   } else {
@@ -315,9 +325,15 @@ function CalendarInvitesDialog({ onClose }: { onClose: () => void }) {
                 >
                   Link
                 </Button>
-                <Button size="small" disabled={busy} onClick={() => dismiss(invite)}>
-                  Ignore
-                </Button>
+                {viewIgnored ? (
+                  <Button size="small" disabled={busy} onClick={() => restore(invite)}>
+                    Restore
+                  </Button>
+                ) : (
+                  <Button size="small" disabled={busy} onClick={() => dismiss(invite)}>
+                    Ignore
+                  </Button>
+                )}
               </div>
             </div>
           );
@@ -329,9 +345,14 @@ function CalendarInvitesDialog({ onClose }: { onClose: () => void }) {
   return (
     <>
       <DialogTitle className="calendar-invites-dialog-title">
-        <span>Calendar Invites</span>
+        <span>{viewIgnored ? 'Ignored Invites' : 'Calendar Invites'}</span>
         <span className="week-calendar-nav">
-          {invites.length > matched.length && (
+          {(viewIgnored || ignored.length > 0) && (
+            <Button size="small" onClick={() => setViewIgnored((v) => !v)}>
+              {viewIgnored ? 'Back to invites' : `Ignored (${ignored.length})`}
+            </Button>
+          )}
+          {!viewIgnored && invites.length > matched.length && (
             <Button size="small" onClick={() => setShowAll((v) => !v)}>
               {showAll
                 ? 'Show matched only'
@@ -362,7 +383,7 @@ function CalendarInvitesDialog({ onClose }: { onClose: () => void }) {
         )}
         {error && <div className="calendar-invites-error">{error}</div>}
         {changesSection}
-        {configured && changes.length > 0 && (
+        {configured && !viewIgnored && changes.length > 0 && (
           <div className="calendar-invites-section-title">New invites</div>
         )}
         {body}

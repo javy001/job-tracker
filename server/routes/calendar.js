@@ -164,11 +164,11 @@ const changeBase = (app, event, invite) => ({
   to: slotOf(invite),
 });
 
-// --- GET /api/calendar/invites: feed events not yet linked or ignored, plus
-// changes to linked ones ---
+// --- GET /api/calendar/invites: feed events not yet linked (split into new
+// and ignored), plus changes to linked ones ---
 router.get('/calendar/invites', async (req, res) => {
   if (feedUrls().length === 0) {
-    return res.json({ configured: false, invites: [], changes: [] });
+    return res.json({ configured: false, invites: [], ignored: [], changes: [] });
   }
   try {
     const [invites, apps, dismissed] = await Promise.all([
@@ -176,15 +176,21 @@ router.get('/calendar/invites', async (req, res) => {
       pool.query('SELECT id, name, point_of_contact_email, events FROM jobs.applications'),
       pool.query('SELECT uid FROM jobs.dismissed_calendar_invites'),
     ]);
-    const handled = new Set(dismissed.rows.map((r) => r.uid));
+    const ignoredUids = new Set(dismissed.rows.map((r) => r.uid));
+    const linkedUids = new Set();
     for (const app of apps.rows) {
-      for (const e of app.events ?? []) if (e.calendar_uid) handled.add(e.calendar_uid);
+      for (const e of app.events ?? []) if (e.calendar_uid) linkedUids.add(e.calendar_uid);
     }
 
-    const pending = invites
-      .filter((i) => !i.cancelled && !handled.has(i.uid))
+    const unlinked = invites
+      .filter((i) => !i.cancelled && !linkedUids.has(i.uid))
       .map((i) => ({ ...i, suggestion: suggestApplication(i, apps.rows) }));
-    res.json({ configured: true, invites: pending, changes: findChanges(invites, apps.rows) });
+    res.json({
+      configured: true,
+      invites: unlinked.filter((i) => !ignoredUids.has(i.uid)),
+      ignored: unlinked.filter((i) => ignoredUids.has(i.uid)),
+      changes: findChanges(invites, apps.rows),
+    });
   } catch (err) {
     console.error(err);
     res.status(502).json({ error: `Could not load calendar feed: ${err.message}` });
@@ -234,6 +240,8 @@ router.post('/calendar/invites/link', async (req, res) => {
       if (exists.rows.length === 0) return res.status(404).json({ error: 'Application not found' });
       return res.json({ message: 'Invite already linked' });
     }
+    // A linked invite is no longer ignored (it may have been linked from the Ignored list)
+    await pool.query('DELETE FROM jobs.dismissed_calendar_invites WHERE uid = $1', [invite.uid]);
     res.json({ message: 'Invite linked!', application: result.rows[0] });
   } catch (err) {
     console.error(err);
@@ -251,6 +259,19 @@ router.post('/calendar/invites/dismiss', async (req, res) => {
       [uid]
     );
     res.json({ message: 'Invite ignored' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database server error occurred' });
+  }
+});
+
+// --- POST /api/calendar/invites/restore: move an ignored invite back to the new list ---
+router.post('/calendar/invites/restore', async (req, res) => {
+  const { uid } = req.body ?? {};
+  if (typeof uid !== 'string' || !uid) return res.status(400).json({ error: 'uid is required' });
+  try {
+    await pool.query('DELETE FROM jobs.dismissed_calendar_invites WHERE uid = $1', [uid]);
+    res.json({ message: 'Invite restored' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Database server error occurred' });
