@@ -1,5 +1,5 @@
 import dayjs from 'dayjs';
-import type { ApplicationEvent, ApplicationEventType } from './types';
+import type { ApplicationEvent, ApplicationEventType, CalendarSlot } from './types';
 
 // Display label and chart color for each interview event type
 export const eventTypes: Record<ApplicationEventType, { label: string; color: string }> = {
@@ -32,3 +32,13 @@ export const durationOptions = [15, 30, 45, 60, 90, 120, 180, 240];
 // "45 min", "1 hr", "1.5 hr"
 export const formatDuration = (minutes: number) =>
   minutes < 60 ? `${minutes} min` : `${+(minutes / 60).toFixed(2)} hr`;
+
+// "Thu, Nov 20 · 11:00 AM · 45 min"
+export const formatSlot = (slot: CalendarSlot) =>
+  [
+    dayjs(slot.date).format('ddd, MMM D'),
+    slot.time && dayjs(`2000-01-01T${slot.time}`).format('h:mm A'),
+    slot.duration && formatDuration(slot.duration),
+  ]
+    .filter(Boolean)
+    .join(' · ');

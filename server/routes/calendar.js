@@ -165,10 +165,10 @@ const changeBase = (app, event, invite) => ({
 });
 
 // --- GET /api/calendar/invites: feed events not yet linked (split into new
-// and ignored), plus changes to linked ones ---
+// and ignored), the linked ones, plus changes to linked ones ---
 router.get('/calendar/invites', async (req, res) => {
   if (feedUrls().length === 0) {
-    return res.json({ configured: false, invites: [], ignored: [], changes: [] });
+    return res.json({ configured: false, invites: [], ignored: [], linked: [], changes: [] });
   }
   try {
     const [invites, apps, dismissed] = await Promise.all([
@@ -189,6 +189,7 @@ router.get('/calendar/invites', async (req, res) => {
       configured: true,
       invites: unlinked.filter((i) => !ignoredUids.has(i.uid)),
       ignored: unlinked.filter((i) => ignoredUids.has(i.uid)),
+      linked: invites.filter((i) => linkedUids.has(i.uid)),
       changes: findChanges(invites, apps.rows),
     });
   } catch (err) {

@@ -544,3 +544,32 @@ body {
   font-size: inherit;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
+
+/* Calendar invite link row in the edit application modal */
+.event-calendar-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+}
+
+.event-calendar-link.linked {
+  padding: 2px 4px 2px 8px;
+  border-radius: 4px;
+  background-color: #eef4ff;
+  color: #1d4ed8;
+}
+
+.event-calendar-link.linked.cancelled {
+  background-color: #fdecec;
+  color: #b91c1c;
+}
+
+.event-calendar-link-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.85rem;
+}

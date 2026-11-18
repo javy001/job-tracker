@@ -18,6 +18,7 @@ import type { ApplicationEvent, ApplicationEventType, JobApplication } from '../
 import { useQueryClient } from '@tanstack/react-query';
 import { DatePicker } from './DatePicker';
 import { TimePicker } from './TimePicker';
+import { EventCalendarLink } from './EventCalendarLink';
 import {
   DEFAULT_EVENT_DURATION,
   durationOptions,
@@ -81,6 +82,14 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
 
   const queryClient = useQueryClient();
 
+  // Invites linked to this application when the modal opened
+  const ownUids = React.useMemo(
+    () => new Set((data.events ?? []).flatMap((e) => (e.calendar_uid ? [e.calendar_uid] : []))),
+    [data.events]
+  );
+  const uidsLinkedExcept = (id: string) =>
+    new Set(events.flatMap((e) => (e._id !== id && e.calendar_uid ? [e.calendar_uid] : [])));
+
   const salaryInvalid =
     salaryMin !== '' && salaryMax !== '' && Number(salaryMin) > Number(salaryMax);
   const emailInvalid = !isValidEmail(contactEmail);
@@ -133,6 +142,8 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
       }),
     }).then(() => {
       queryClient.invalidateQueries({ queryKey: ['applications'] });
+      // Linking/unlinking changes which invites are new and which have changes
+      queryClient.invalidateQueries({ queryKey: ['calendar-invites'] });
       setCompanyName(null);
       setRole(null);
       onClose();
@@ -343,6 +354,12 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
                 value={e.notes ?? ''}
                 onChange={(ev) => updateEvent(e._id, { notes: ev.target.value })}
                 autoComplete="off"
+              />
+              <EventCalendarLink
+                event={e}
+                takenUids={uidsLinkedExcept(e._id)}
+                ownUids={ownUids}
+                onChange={(changes) => updateEvent(e._id, changes)}
               />
             </div>
           ))}

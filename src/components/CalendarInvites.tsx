@@ -18,32 +18,11 @@ import type {
   ApplicationEventType,
   CalendarChange,
   CalendarInvite,
-  CalendarSlot,
   JobApplication,
 } from '../types';
-import { eventTypes, formatDuration, formatEventTime } from '../eventTypes';
+import { eventTypes, formatDuration, formatEventTime, formatSlot } from '../eventTypes';
+import { useCalendarInvites } from '../hooks/useCalendarInvites';
 import { fetchApplications } from '../hooks/useApplications';
-
-interface InvitesResponse {
-  configured: boolean;
-  invites: CalendarInvite[];
-  ignored: CalendarInvite[];
-  changes: CalendarChange[];
-}
-
-const fetchInvites = async (): Promise<InvitesResponse> => {
-  const res = await fetch('/api/calendar/invites');
-  const body = await res.json();
-  if (!res.ok) throw new Error(body.error ?? 'Could not load calendar invites');
-  return body;
-};
-
-const useCalendarInvites = () =>
-  useQuery({
-    queryKey: ['calendar-invites'],
-    queryFn: fetchInvites,
-    staleTime: 5 * 60 * 1000,
-  });
 
 const post = async (path: string, body: unknown) => {
   const res = await fetch(path, {
@@ -53,16 +32,6 @@ const post = async (path: string, body: unknown) => {
   });
   if (!res.ok) throw new Error((await res.json()).error ?? 'Request failed');
 };
-
-// "Thu, Nov 20 · 11:00 AM · 45 min"
-const formatSlot = (slot: CalendarSlot) =>
-  [
-    dayjs(slot.date).format('ddd, MMM D'),
-    slot.time && dayjs(`2000-01-01T${slot.time}`).format('h:mm A'),
-    slot.duration && formatDuration(slot.duration),
-  ]
-    .filter(Boolean)
-    .join(' · ');
 
 const appLabel = (app: JobApplication) => `${app.name ?? ''}${app.role ? ` — ${app.role}` : ''}`;
 
