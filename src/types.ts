@@ -47,7 +47,7 @@ export interface CalendarInvite {
   participants: string[];
   suggestedType: ApplicationEventType;
   suggestion: { applicationId: string; reason: string } | null;
-  cancelled?: boolean; // only set on linked invites
+  cancelled?: boolean; // invite was cancelled in the calendar; only linked lists can include these
 }
 export interface CalendarSlot {
   date: string;
