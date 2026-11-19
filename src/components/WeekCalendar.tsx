@@ -1,10 +1,9 @@
 import React from 'react';
 import dayjs from 'dayjs';
-import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import { ChevronLeftIcon, ChevronRightIcon, EyeOffIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { eventBlock, eventBlockStyle } from '@/lib/styles';
 import type { ApplicationEvent, JobApplication } from '../types';
 import {
   eventDuration,
@@ -16,8 +15,9 @@ import {
 import { UpdateApplicationModal } from './UpdateApplicationModal';
 import { CalendarInvitesButton } from './CalendarInvites';
 import { useApplications } from '../hooks/useApplications';
+import { Section } from './Section';
 
-const barColor = '#94a3b8';
+const barColor = 'var(--subtle-foreground)';
 
 // Private mode hides company, role and event type so the week can be
 // screenshotted and shared (e.g. with recruiters) to show availability only
@@ -169,28 +169,66 @@ export function WeekCalendar() {
   const renderEventBody = ({ application, event }: CalendarEvent, showTime: boolean) =>
     isPrivate ? (
       <>
-        <div className="week-calendar-event-type">Busy</div>
+        <div className="font-medium">Busy</div>
         {showTime && event.time && (
-          <div className="week-calendar-event-time">
+          <div className="text-muted-foreground">
             {formatEventTime(event)} · {formatDuration(eventDuration(event))}
           </div>
         )}
       </>
     ) : (
       <>
-        <div className="week-calendar-event-type">{application.name}</div>
+        <div className="truncate font-medium">{application.name}</div>
         {showTime && event.time && (
-          <div className="week-calendar-event-time">
+          <div className="text-muted-foreground">
             {formatEventTime(event)} · {formatDuration(eventDuration(event))}
           </div>
         )}
-        <div>{eventTypes[event.type]?.label ?? event.type}</div>
-        <div className="week-calendar-event-role">{application.role}</div>
+        <div className="truncate">{eventTypes[event.type]?.label ?? event.type}</div>
+        <div className="truncate text-subtle-foreground">{application.role}</div>
       </>
     );
 
+  const actions = (
+    <>
+      <Button
+        variant={isPrivate ? 'secondary' : 'ghost'}
+        aria-pressed={isPrivate}
+        title="Hide company, role and event details so the calendar can be shared"
+        onClick={togglePrivate}
+        className={cn(isPrivate && 'text-primary dark:text-[#9db2ff]')}
+      >
+        <EyeOffIcon />
+        Private
+      </Button>
+      <CalendarInvitesButton />
+      <Button variant="ghost" onClick={() => setMonday(getDefaultMonday())}>
+        This week
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label="Previous week"
+        onClick={() => setMonday((m) => m.subtract(1, 'week'))}
+      >
+        <ChevronLeftIcon />
+      </Button>
+      <span className="min-w-[170px] text-center text-[13px] font-medium tabular-nums">
+        {weekLabel}
+      </span>
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label="Next week"
+        onClick={() => setMonday((m) => m.add(1, 'week'))}
+      >
+        <ChevronRightIcon />
+      </Button>
+    </>
+  );
+
   return (
-    <div className="week-calendar">
+    <Section title="Upcoming events" actions={actions}>
       {clickedRow && (
         <UpdateApplicationModal
           open={!!clickedRow}
@@ -198,44 +236,11 @@ export function WeekCalendar() {
           data={clickedRow}
         />
       )}
-      <div className="week-calendar-header">
-        <div className="week-calendar-title">Upcoming Events</div>
-        <div className="week-calendar-nav">
-          <Button
-            size="small"
-            variant={isPrivate ? 'contained' : 'text'}
-            startIcon={<VisibilityOffIcon fontSize="small" />}
-            aria-pressed={isPrivate}
-            title="Hide company, role and event details so the calendar can be shared"
-            onClick={togglePrivate}
-          >
-            Private
-          </Button>
-          <CalendarInvitesButton />
-          <Button size="small" onClick={() => setMonday(getDefaultMonday())}>
-            This week
-          </Button>
-          <IconButton
-            size="small"
-            aria-label="Previous week"
-            onClick={() => setMonday((m) => m.subtract(1, 'week'))}
-          >
-            <ChevronLeftIcon fontSize="small" />
-          </IconButton>
-          <span className="week-calendar-range">{weekLabel}</span>
-          <IconButton
-            size="small"
-            aria-label="Next week"
-            onClick={() => setMonday((m) => m.add(1, 'week'))}
-          >
-            <ChevronRightIcon fontSize="small" />
-          </IconButton>
-        </div>
-      </div>
-      <div className="week-calendar-days">
+      <div className="grid grid-cols-[44px_repeat(5,minmax(0,1fr))] gap-x-2 gap-y-1">
         <div />
         {days.map((day) => {
           const key = day.format('YYYY-MM-DD');
+          const isToday = key === today;
           // Untimed events don't block any time, so private mode leaves them out
           const untimed = isPrivate
             ? []
@@ -243,14 +248,24 @@ export function WeekCalendar() {
           return (
             <div
               key={key}
-              className={`week-calendar-day-head${key === today ? ' week-calendar-today' : ''}`}
+              className={cn(
+                'flex flex-col gap-1.5 rounded-md bg-muted px-2 py-1.5',
+                isToday && 'bg-primary/15 ring-1 ring-primary/50 ring-inset',
+              )}
             >
-              <div className="week-calendar-day-label">{day.format('ddd, MMM D')}</div>
+              <div
+                className={cn(
+                  'text-xs font-medium text-muted-foreground',
+                  isToday && 'text-primary dark:text-[#9db2ff]',
+                )}
+              >
+                {day.format('ddd, MMM D')}
+              </div>
               {untimed.map((e, i) => (
                 <div
                   key={i}
-                  className="week-calendar-event"
-                  style={{ borderLeftColor: eventColor(e.event) }}
+                  className={eventBlock}
+                  style={eventBlockStyle(eventColor(e.event))}
                   onClick={() => setClickedRow(e.application)}
                 >
                   {renderEventBody(e, false)}
@@ -260,11 +275,14 @@ export function WeekCalendar() {
           );
         })}
 
-        <div className="week-calendar-hours" style={{ height: gridHeight }}>
-          {hours.map((h) => (
+        <div className="relative" style={{ height: gridHeight }}>
+          {hours.map((h, i) => (
             <div
               key={h}
-              className="week-calendar-hour-label"
+              className={cn(
+                'absolute right-0 text-[11px] whitespace-nowrap text-subtle-foreground tabular-nums',
+                i > 0 && '-translate-y-1/2',
+              )}
               style={{ top: (h * 60 - gridStart) * pxPerMinute }}
             >
               {dayjs().hour(h).minute(0).format('h A')}
@@ -273,10 +291,14 @@ export function WeekCalendar() {
         </div>
         {days.map((day) => {
           const key = day.format('YYYY-MM-DD');
+          const isToday = key === today;
           return (
             <div
               key={key}
-              className={`week-calendar-day${key === today ? ' week-calendar-today' : ''}`}
+              className={cn(
+                'relative overflow-hidden rounded-md bg-muted bg-[linear-gradient(to_bottom,var(--border-strong)_1px,transparent_1px)]',
+                isToday && 'bg-primary/10 ring-1 ring-primary/50 ring-inset',
+              )}
               style={{
                 height: gridHeight,
                 backgroundSize: `100% ${PX_PER_HOUR}px`,
@@ -287,14 +309,14 @@ export function WeekCalendar() {
                 return (
                   <div
                     key={i}
-                    className="week-calendar-event week-calendar-event-timed"
+                    className={cn(eventBlock, 'absolute box-border overflow-hidden px-1.5 py-1 leading-tight')}
                     title={
                       isPrivate
                         ? `Busy · ${formatEventTime(e.event)} · ${formatDuration(eventDuration(e.event))}`
                         : `${eventTypes[e.event.type]?.label ?? e.event.type} · ${formatEventTime(e.event)} · ${formatDuration(eventDuration(e.event))}\n${e.application.name ?? ''}`
                     }
                     style={{
-                      borderLeftColor: eventColor(e.event),
+                      ...eventBlockStyle(eventColor(e.event)),
                       top: (e.start - gridStart) * pxPerMinute,
                       height,
                       left: `calc(${(e.column / e.columns) * 100}% + 2px)`,
@@ -306,9 +328,9 @@ export function WeekCalendar() {
                   </div>
                 );
               })}
-              {key === today && nowMinutes >= gridStart && nowMinutes <= gridEnd && (
+              {isToday && nowMinutes >= gridStart && nowMinutes <= gridEnd && (
                 <div
-                  className="week-calendar-now"
+                  className="pointer-events-none absolute right-0 left-0 z-[1] h-0.5 bg-now before:absolute before:-top-[3px] before:-left-px before:size-2 before:rounded-full before:bg-now"
                   style={{ top: (nowMinutes - gridStart) * pxPerMinute }}
                   aria-label={`Current time ${now.format('h:mm A')}`}
                 />
@@ -317,6 +339,6 @@ export function WeekCalendar() {
           );
         })}
       </div>
-    </div>
+    </Section>
   );
 }

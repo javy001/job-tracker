@@ -1,25 +1,39 @@
-import { TimePicker as TPicker } from '@mui/x-date-pickers/TimePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import type { Dayjs } from 'dayjs';
+import { XIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 interface Props {
-  value: Dayjs | null;
-  onChange: (val: Dayjs | null) => void;
-  label?: string;
+  // "HH:mm", or null when no time is set
+  value: string | null;
+  onChange: (val: string | null) => void;
+  id?: string;
+  className?: string;
 }
 
-export function TimePicker({ value, onChange, label = 'Time' }: Props) {
+// Native time input (styled to match) with a button to clear the time
+export function TimePicker({ value, onChange, id, className }: Props) {
   return (
-    <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <TPicker
-        label={label}
-        value={value}
-        onChange={(newValue) => {
-          if (newValue === null || newValue.isValid()) onChange(newValue);
-        }}
-        slotProps={{ field: { clearable: true } }}
+    <div className={cn('relative', className)}>
+      <Input
+        id={id}
+        type="time"
+        value={value ?? ''}
+        onChange={(e) => onChange(e.target.value || null)}
+        className="pr-8"
       />
-    </LocalizationProvider>
+      {value && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          aria-label="Clear time"
+          className="absolute top-1/2 right-1.5 -translate-y-1/2 text-muted-foreground"
+          onClick={() => onChange(null)}
+        >
+          <XIcon />
+        </Button>
+      )}
+    </div>
   );
 }

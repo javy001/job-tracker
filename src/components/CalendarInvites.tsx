@@ -1,19 +1,27 @@
 import React from 'react';
 import dayjs from 'dayjs';
-import Autocomplete from '@mui/material/Autocomplete';
-import Badge from '@mui/material/Badge';
-import Button from '@mui/material/Button';
-import Dialog from '@mui/material/Dialog';
-import DialogContent from '@mui/material/DialogContent';
-import DialogTitle from '@mui/material/DialogTitle';
-import IconButton from '@mui/material/IconButton';
-import MenuItem from '@mui/material/MenuItem';
-import TextField from '@mui/material/TextField';
-import Tooltip from '@mui/material/Tooltip';
-import CloseIcon from '@mui/icons-material/Close';
-import EventAvailableIcon from '@mui/icons-material/EventAvailable';
-import RefreshIcon from '@mui/icons-material/Refresh';
+import { CalendarCheckIcon, CheckIcon, ChevronsUpDownIcon, RefreshCwIcon, XIcon } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Button } from '@/components/ui/button';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 import type {
   ApplicationEventType,
   CalendarChange,
@@ -56,21 +64,125 @@ export function CalendarInvitesButton() {
       .filter(Boolean)
       .join(', ') || 'Calendar invites';
 
+  const badgeCount = matchedCount + changeCount;
+
   return (
     <>
-      <Tooltip title={tooltip}>
-        <IconButton size="small" aria-label="Calendar invites" onClick={() => setOpen(true)}>
-          <Badge badgeContent={matchedCount + changeCount} color="primary">
-            <EventAvailableIcon fontSize="small" />
-          </Badge>
-        </IconButton>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Calendar invites"
+            className="relative"
+            onClick={() => setOpen(true)}
+          >
+            <CalendarCheckIcon />
+            {badgeCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 inline-flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-1 text-[10px] leading-none font-medium text-primary-foreground tabular-nums">
+                {badgeCount}
+              </span>
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{tooltip}</TooltipContent>
       </Tooltip>
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
-        <CalendarInvitesDialog onClose={() => setOpen(false)} />
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent
+          showCloseButton={false}
+          aria-describedby={undefined}
+          className="max-h-[85vh] gap-0 overflow-y-auto p-0 sm:max-w-3xl"
+        >
+          <CalendarInvitesDialog onClose={() => setOpen(false)} />
+        </DialogContent>
       </Dialog>
     </>
   );
 }
+
+// Searchable application picker
+function ApplicationCombobox({
+  applications,
+  value,
+  onChange,
+}: {
+  applications: JobApplication[];
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const selected = applications.find((a) => a.id === value);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          aria-label="Application"
+          className="w-60 justify-between font-normal"
+        >
+          <span className={cn('truncate', !selected && 'text-muted-foreground')}>
+            {selected ? appLabel(selected) : 'Choose application'}
+          </span>
+          <ChevronsUpDownIcon className="opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Search applications" />
+          <CommandList>
+            <CommandEmpty>No applications found</CommandEmpty>
+            <CommandGroup>
+              {applications.map((a) => (
+                <CommandItem
+                  key={a.id}
+                  value={`${appLabel(a)} ${a.id}`}
+                  onSelect={() => {
+                    onChange(a.id === value ? '' : a.id);
+                    setOpen(false);
+                  }}
+                >
+                  <CheckIcon className={cn(a.id === value ? 'opacity-100' : 'opacity-0')} />
+                  <span className="truncate">{appLabel(a)}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function EventTypeSelect({
+  value,
+  onChange,
+}: {
+  value: ApplicationEventType;
+  onChange: (type: ApplicationEventType) => void;
+}) {
+  return (
+    <Select value={value} onValueChange={(v) => onChange(v as ApplicationEventType)}>
+      <SelectTrigger aria-label="Event type" className="w-40">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {Object.entries(eventTypes).map(([type, { label, color }]) => (
+          <SelectItem key={type} value={type}>
+            <span className="size-2 rounded-full" style={{ backgroundColor: color }} aria-hidden="true" />
+            {label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+const inviteRow =
+  'flex flex-wrap items-center justify-between gap-3 rounded-md border border-l-[3px] bg-background px-3 py-2';
+const sectionTitle = 'mb-2 mt-4 text-[11px] font-medium text-subtle-foreground first:mt-0';
+const emptyState = 'py-6 text-center text-[13px] text-subtle-foreground';
 
 function CalendarInvitesDialog({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient();
@@ -151,8 +263,8 @@ function CalendarInvitesDialog({ onClose }: { onClose: () => void }) {
 
   const changesSection = !viewIgnored && changes.length > 0 && (
     <>
-      <div className="calendar-invites-section-title">Schedule changes</div>
-      <div className="calendar-invites-list">
+      <div className={sectionTitle}>Schedule changes</div>
+      <div className="flex flex-col gap-2">
         {changes.map((change) => {
           const busyKey = `${change.applicationId}:${change.uid}`;
           const busy = busyUid === busyKey;
@@ -160,30 +272,28 @@ function CalendarInvitesDialog({ onClose }: { onClose: () => void }) {
           return (
             <div
               key={busyKey}
-              className="calendar-invite"
-              style={{ borderLeftColor: cancelled ? '#d62728' : '#f59e0b' }}
+              className={inviteRow}
+              style={{ borderLeftColor: cancelled ? 'var(--destructive)' : 'var(--warning)' }}
             >
-              <div className="calendar-invite-info">
-                <div className="week-calendar-event-type">
+              <div className="min-w-0 flex-[1_1_220px] text-xs">
+                <div className="text-[13px] font-medium">
                   {change.applicationName} · {eventTypes[change.eventType]?.label ?? change.eventType}
                 </div>
-                <div className="week-calendar-event-role">{change.title}</div>
+                <div className="text-subtle-foreground">{change.title}</div>
                 {cancelled ? (
-                  <div className="calendar-invite-change">
+                  <div className="mt-0.5 text-destructive">
                     Cancelled · was {formatSlot(change.from)}
                   </div>
                 ) : (
-                  <div className="calendar-invite-change">
-                    <s>{formatSlot(change.from)}</s> → <strong>{formatSlot(change.to)}</strong>
+                  <div className="mt-0.5">
+                    <s className="text-subtle-foreground">{formatSlot(change.from)}</s> → <strong>{formatSlot(change.to)}</strong>
                   </div>
                 )}
               </div>
-              <div className="calendar-invite-actions">
+              <div className="flex flex-wrap items-center gap-1.5">
                 {cancelled ? (
                   <Button
-                    size="small"
-                    variant="contained"
-                    color="error"
+                    variant="destructive"
                     disabled={busy}
                     onClick={() => resolve(change, 'remove')}
                   >
@@ -191,15 +301,13 @@ function CalendarInvitesDialog({ onClose }: { onClose: () => void }) {
                   </Button>
                 ) : (
                   <Button
-                    size="small"
-                    variant="contained"
                     disabled={busy}
                     onClick={() => resolve(change, 'update')}
                   >
                     Update
                   </Button>
                 )}
-                <Button size="small" disabled={busy} onClick={() => resolve(change, 'keep')}>
+                <Button variant="ghost" disabled={busy} onClick={() => resolve(change, 'keep')}>
                   Keep mine
                 </Button>
               </div>
@@ -213,16 +321,16 @@ function CalendarInvitesDialog({ onClose }: { onClose: () => void }) {
   let body: React.ReactNode;
   if (!configured) {
     body = (
-      <div className="week-calendar-empty">
+      <div className={emptyState}>
         Add your calendar's share link as CALENDAR_ICS_URLS in server/.env to import interview
         invites.
       </div>
     );
   } else if (invitesQuery.isLoading) {
-    body = <div className="week-calendar-empty">Loading calendar…</div>;
+    body = <div className={emptyState}>Loading calendar…</div>;
   } else if (visible.length === 0) {
     body = (
-      <div className="week-calendar-empty">
+      <div className={emptyState}>
         {viewIgnored
           ? 'No ignored invites'
           : invites.length
@@ -232,7 +340,7 @@ function CalendarInvitesDialog({ onClose }: { onClose: () => void }) {
     );
   } else {
     body = (
-      <div className="calendar-invites-list">
+      <div className="flex flex-col gap-2">
         {visible.map((invite) => {
           const draft = draftFor(invite);
           const time = formatEventTime({ type: draft.type, date: invite.date, time: invite.time });
@@ -240,66 +348,45 @@ function CalendarInvitesDialog({ onClose }: { onClose: () => void }) {
           return (
             <div
               key={invite.uid}
-              className="calendar-invite"
+              className={inviteRow}
               style={{ borderLeftColor: eventTypes[draft.type].color }}
             >
-              <div className="calendar-invite-info">
-                <div className="week-calendar-event-type">{invite.title}</div>
-                <div className="week-calendar-event-time">
+              <div className="min-w-0 flex-[1_1_220px] text-xs">
+                <div className="text-[13px] font-medium">{invite.title}</div>
+                <div className="text-muted-foreground">
                   {dayjs(invite.date).format('ddd, MMM D')}
                   {time && ` · ${time}`}
                   {invite.duration && ` · ${formatDuration(invite.duration)}`}
                 </div>
                 {invite.organizer && (
-                  <div className="week-calendar-event-role">From {invite.organizer}</div>
+                  <div className="text-subtle-foreground">From {invite.organizer}</div>
                 )}
                 {invite.suggestion && (
-                  <div className="calendar-invite-reason">Suggested: {invite.suggestion.reason}</div>
+                  <div className="mt-0.5 text-primary dark:text-[#9db2ff]">Suggested: {invite.suggestion.reason}</div>
                 )}
               </div>
-              <div className="calendar-invite-actions">
-                <Autocomplete
-                  size="small"
-                  options={sortedApps}
-                  value={sortedApps.find((a) => a.id === draft.applicationId) ?? null}
-                  onChange={(_, app) =>
-                    setDraft(invite.uid, { ...draft, applicationId: app?.id ?? '' })
-                  }
-                  getOptionLabel={appLabel}
-                  isOptionEqualToValue={(a, b) => a.id === b.id}
-                  renderInput={(params) => <TextField {...params} label="Application" />}
-                  sx={{ width: 240 }}
+              <div className="flex flex-wrap items-center gap-1.5">
+                <ApplicationCombobox
+                  applications={sortedApps}
+                  value={draft.applicationId}
+                  onChange={(applicationId) => setDraft(invite.uid, { ...draft, applicationId })}
                 />
-                <TextField
-                  select
-                  size="small"
-                  label="Type"
+                <EventTypeSelect
                   value={draft.type}
-                  onChange={(e) =>
-                    setDraft(invite.uid, { ...draft, type: e.target.value as ApplicationEventType })
-                  }
-                  sx={{ minWidth: 160 }}
-                >
-                  {Object.entries(eventTypes).map(([value, { label }]) => (
-                    <MenuItem key={value} value={value}>
-                      {label}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                  onChange={(type) => setDraft(invite.uid, { ...draft, type })}
+                />
                 <Button
-                  size="small"
-                  variant="contained"
                   disabled={!draft.applicationId || busy}
                   onClick={() => link(invite)}
                 >
                   Link
                 </Button>
                 {viewIgnored ? (
-                  <Button size="small" disabled={busy} onClick={() => restore(invite)}>
+                  <Button variant="ghost" disabled={busy} onClick={() => restore(invite)}>
                     Restore
                   </Button>
                 ) : (
-                  <Button size="small" disabled={busy} onClick={() => dismiss(invite)}>
+                  <Button variant="ghost" disabled={busy} onClick={() => dismiss(invite)}>
                     Ignore
                   </Button>
                 )}
@@ -313,50 +400,55 @@ function CalendarInvitesDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <>
-      <DialogTitle className="calendar-invites-dialog-title">
-        <span>{viewIgnored ? 'Ignored Invites' : 'Calendar Invites'}</span>
-        <span className="week-calendar-nav">
+      <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-2 border-b bg-background px-4 py-2.5">
+        <DialogTitle className="text-sm font-semibold">
+          {viewIgnored ? 'Ignored invites' : 'Calendar invites'}
+        </DialogTitle>
+        <div className="flex flex-wrap items-center gap-1">
           {(viewIgnored || ignored.length > 0) && (
-            <Button size="small" onClick={() => setViewIgnored((v) => !v)}>
+            <Button variant="ghost" onClick={() => setViewIgnored((v) => !v)}>
               {viewIgnored ? 'Back to invites' : `Ignored (${ignored.length})`}
             </Button>
           )}
           {!viewIgnored && invites.length > matched.length && (
-            <Button size="small" onClick={() => setShowAll((v) => !v)}>
+            <Button variant="ghost" onClick={() => setShowAll((v) => !v)}>
               {showAll
                 ? 'Show matched only'
                 : `Show all events (${invites.length - matched.length} more)`}
             </Button>
           )}
           {configured && (
-            <Tooltip title="Refresh from calendar">
-              <span>
-                <IconButton
-                  size="small"
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Refresh from calendar"
                   onClick={() => invitesQuery.refetch()}
                   disabled={invitesQuery.isFetching}
                 >
-                  <RefreshIcon fontSize="small" />
-                </IconButton>
-              </span>
+                  <RefreshCwIcon className={cn(invitesQuery.isFetching && 'animate-spin')} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Refresh from calendar</TooltipContent>
             </Tooltip>
           )}
-          <IconButton size="small" aria-label="Close" onClick={onClose}>
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </span>
-      </DialogTitle>
-      <DialogContent>
+          <Button variant="ghost" size="icon" aria-label="Close" onClick={onClose}>
+            <XIcon />
+          </Button>
+        </div>
+      </div>
+      <div className="p-4">
         {invitesQuery.isError && (
-          <div className="calendar-invites-error">{invitesQuery.error.message}</div>
+          <div className="mb-2 text-xs text-destructive">{invitesQuery.error.message}</div>
         )}
-        {error && <div className="calendar-invites-error">{error}</div>}
+        {error && <div className="mb-2 text-xs text-destructive">{error}</div>}
         {changesSection}
         {configured && !viewIgnored && changes.length > 0 && (
-          <div className="calendar-invites-section-title">New invites</div>
+          <div className={sectionTitle}>New invites</div>
         )}
         {body}
-      </DialogContent>
+      </div>
     </>
   );
 }

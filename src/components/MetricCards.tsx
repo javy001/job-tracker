@@ -1,3 +1,4 @@
+import { cn } from '@/lib/utils';
 import { useApplications } from '../hooks/useApplications';
 import { metricFilters, type MetricFilter } from '../metricFilters';
 
@@ -12,16 +13,21 @@ interface MetricCardProps {
 function MetricCard({ label, value, detail, selected, onClick }: MetricCardProps) {
   const content = (
     <>
-      <div className="metric-card-label">{label}</div>
-      <div className="metric-card-value">{value}</div>
-      {detail && <div className="metric-card-detail">{detail}</div>}
+      <div className="text-xs font-medium text-muted-foreground">{label}</div>
+      <div className="mt-1.5 text-[28px] leading-none font-semibold tabular-nums">{value}</div>
+      {detail && <div className="mt-1.5 text-xs text-subtle-foreground">{detail}</div>}
     </>
   );
-  if (!onClick) return <div className="metric-card">{content}</div>;
+  const base = 'rounded-lg border bg-card px-4 py-3 text-left text-card-foreground';
+  if (!onClick) return <div className={base}>{content}</div>;
   return (
     <button
       type="button"
-      className={`metric-card metric-card-clickable${selected ? ' selected' : ''}`}
+      className={cn(
+        base,
+        'cursor-pointer font-[inherit] outline-none transition-colors hover:border-border-strong hover:bg-accent/40 focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        selected && 'border-primary bg-primary/5 ring-1 ring-primary hover:border-primary',
+      )}
       aria-pressed={selected}
       onClick={onClick}
     >
@@ -52,7 +58,7 @@ export function MetricCards({ filter, onFilterChange }: MetricCardsProps) {
   const toggle = (f: MetricFilter) => () => onFilterChange(filter === f ? null : f);
 
   return (
-    <div className="metric-cards">
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-3">
       <MetricCard
         label="Applications"
         value={data.length}

@@ -1,16 +1,17 @@
 import React from 'react';
-import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
-import MenuItem from '@mui/material/MenuItem';
-import TextField from '@mui/material/TextField';
-import Switch from '@mui/material/Switch';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import ShuffleIcon from '@mui/icons-material/Shuffle';
-import CloseIcon from '@mui/icons-material/Close';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import { ChevronLeftIcon, ChevronRightIcon, ShuffleIcon, XIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { cn } from '@/lib/utils';
 import { algorithmCards, type Flashcard, type FlashcardResult } from '../flashcards';
 import { frontendCards } from '../frontendFlashcards';
 import { systemDesignCards } from '../systemDesignFlashcards';
@@ -31,7 +32,15 @@ const getCategories = (cards: Flashcard[]) =>
 
 // Show `backtick` spans in answers as inline code
 const withCode = (text: string) =>
-  text.split('`').map((part, i) => (i % 2 ? <code key={i}>{part}</code> : part));
+  text.split('`').map((part, i) =>
+    i % 2 ? (
+      <code key={i} className="rounded-[4px] bg-accent px-1 py-px font-mono text-[0.85em] text-foreground">
+        {part}
+      </code>
+    ) : (
+      part
+    ),
+  );
 
 const shuffle = <T,>(items: T[]) => {
   const result = [...items];
@@ -141,165 +150,180 @@ export function Flashcards({ onClose }: Props) {
     ? 'No missed cards here — nice work!'
     : 'No cards match this filter.';
 
+  const side = 'flex min-h-40 flex-col gap-2 rounded-md border bg-muted/40 px-4 py-3 text-[13px] leading-relaxed';
+  const sideLabel = 'flex items-center gap-2 text-[11px] font-medium text-subtle-foreground';
+
   return (
-    <div className="flashcards">
-      <div className="flashcards-header">
-        <div className="flashcards-header-left">
-          <div className="flashcards-title">Study Flashcards</div>
-          <ToggleButtonGroup
-            size="small"
-            exclusive
+    <div>
+      <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-2 border-b bg-background px-4 py-2.5">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="text-sm font-semibold">Study flashcards</div>
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            size="sm"
             value={deckName}
-            onChange={(_, next: DeckName | null) => {
-              if (next) switchDeck(next);
+            onValueChange={(next) => {
+              if (next) switchDeck(next as DeckName);
             }}
           >
             {Object.entries(decks).map(([name, { label }]) => (
-              <ToggleButton key={name} value={name} style={{ textTransform: 'none' }}>
+              <ToggleGroupItem key={name} value={name} className="px-2.5 text-xs">
                 {label}
-              </ToggleButton>
+              </ToggleGroupItem>
             ))}
-          </ToggleButtonGroup>
+          </ToggleGroup>
         </div>
-        <div className="flashcards-nav">
-          <Button size="small" startIcon={<ShuffleIcon />} onClick={shuffleDeck}>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" onClick={shuffleDeck}>
+            <ShuffleIcon />
             Shuffle
           </Button>
-          <IconButton
-            size="small"
+          <Button
+            variant="ghost"
+            size="icon"
             aria-label="Previous card"
             disabled={!visible.length}
             onClick={() => goTo(current - 1)}
           >
-            <ChevronLeftIcon fontSize="small" />
-          </IconButton>
-          <span className="flashcards-count">
+            <ChevronLeftIcon />
+          </Button>
+          <span className="min-w-[60px] text-center text-[13px] font-medium tabular-nums">
             {visible.length ? `${current + 1} / ${visible.length}` : '0 / 0'}
           </span>
-          <IconButton
-            size="small"
+          <Button
+            variant="ghost"
+            size="icon"
             aria-label="Next card"
             disabled={!visible.length}
             onClick={() => goTo(current + 1)}
           >
-            <ChevronRightIcon fontSize="small" />
-          </IconButton>
+            <ChevronRightIcon />
+          </Button>
           {onClose && (
-            <IconButton
-              size="small"
+            <Button
+              variant="ghost"
+              size="icon"
               aria-label="Close flashcards"
               onClick={onClose}
-              style={{ marginLeft: '0.5rem' }}
+              className="ml-2"
             >
-              <CloseIcon fontSize="small" />
-            </IconButton>
+              <XIcon />
+            </Button>
           )}
         </div>
       </div>
-      <div className="flashcards-toolbar">
-        <TextField
-          select
-          size="small"
-          label={deckName === 'algorithms' ? 'Pattern' : 'Topic'}
-          value={category}
-          onChange={(e) => {
-            setCategory(e.target.value);
-            resetPosition();
-          }}
-          style={{ minWidth: 200 }}
-        >
-          <MenuItem value="all">All</MenuItem>
-          {categories.map((c) => (
-            <MenuItem key={c} value={c}>
-              {c}
-            </MenuItem>
-          ))}
-        </TextField>
-        <FormControlLabel
-          control={
+      <div className="flex flex-col gap-3 p-4">
+        <div className="flex flex-wrap items-center gap-4">
+          <Select
+            value={category}
+            onValueChange={(v) => {
+              setCategory(v);
+              resetPosition();
+            }}
+          >
+            <SelectTrigger
+              aria-label={deckName === 'algorithms' ? 'Pattern' : 'Topic'}
+              className="min-w-[200px]"
+            >
+              <span className="text-muted-foreground">
+                {deckName === 'algorithms' ? 'Pattern:' : 'Topic:'}
+              </span>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              {categories.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex items-center gap-2">
             <Switch
-              size="small"
+              id="flashcards-missed-only"
               checked={missedOnly}
-              onChange={(e) => {
-                setMissedOnly(e.target.checked);
+              onCheckedChange={(checked) => {
+                setMissedOnly(checked);
                 resetPosition();
               }}
             />
-          }
-          label="Missed only"
-        />
-        <div className="flashcards-progress">
-          <span className="flashcards-got">✓ {gotCount} got it</span>
-          <span className="flashcards-missed">✗ {missedCount} missed</span>
-          <span>{inCategory.length - gotCount - missedCount} unseen</span>
-          <Button
-            size="small"
-            onClick={resetProgress}
-            disabled={gotCount + missedCount === 0}
-          >
-            Reset
-          </Button>
-        </div>
-      </div>
-      {card ? (
-        <div className="flashcards-body">
-          <div className="flashcards-side">
-            <div className="flashcards-label">
-              Question
-              {results[card.title] && (
-                <span
-                  className={`flashcards-badge flashcards-badge-${results[card.title]}`}
-                >
-                  {results[card.title] === 'got' ? 'Got it' : 'Missed'}
-                </span>
-              )}
-            </div>
-            <div className="flashcards-card-title">{withCode(card.title)}</div>
-            <div>{withCode(card.question)}</div>
+            <Label htmlFor="flashcards-missed-only" className="text-[13px] font-normal">
+              Missed only
+            </Label>
           </div>
-          <div className="flashcards-side">
-            <div className="flashcards-label">Answer</div>
-            {revealed ? (
-              <>
-                <div className="flashcards-pattern">{withCode(card.pattern)}</div>
-                <div>{withCode(card.approach)}</div>
-                {card.solution && (
-                  <CodeBlock code={card.solution} />
-                )}
-                {card.complexity && (
-                  <div className="flashcards-complexity">{card.complexity}</div>
-                )}
-                <div className="flashcards-actions">
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    color="error"
-                    onClick={() => mark('missed')}
+          <div className="ml-auto flex items-center gap-3 text-xs text-muted-foreground tabular-nums">
+            <span className="text-success">✓ {gotCount} got it</span>
+            <span className="text-destructive">✗ {missedCount} missed</span>
+            <span>{inCategory.length - gotCount - missedCount} unseen</span>
+            <Button variant="ghost" size="sm" onClick={resetProgress} disabled={gotCount + missedCount === 0}>
+              Reset
+            </Button>
+          </div>
+        </div>
+        {card ? (
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+            <div className={side}>
+              <div className={sideLabel}>
+                Question
+                {results[card.title] && (
+                  <span
+                    className={cn(
+                      'rounded-full px-1.5 text-[11px] font-medium',
+                      results[card.title] === 'got'
+                        ? 'bg-success/15 text-success'
+                        : 'bg-destructive/15 text-destructive',
+                    )}
                   >
-                    Missed it
-                  </Button>
-                  <Button
-                    size="small"
-                    variant="contained"
-                    color="success"
-                    onClick={() => mark('got')}
-                  >
-                    Got it
+                    {results[card.title] === 'got' ? 'Got it' : 'Missed'}
+                  </span>
+                )}
+              </div>
+              <div className="text-[15px] font-semibold">{withCode(card.title)}</div>
+              <div>{withCode(card.question)}</div>
+            </div>
+            <div className={side}>
+              <div className={sideLabel}>Answer</div>
+              {revealed ? (
+                <>
+                  <div className="text-[15px] font-semibold">{withCode(card.pattern)}</div>
+                  <div>{withCode(card.approach)}</div>
+                  {card.solution && <CodeBlock code={card.solution} />}
+                  {card.complexity && (
+                    <div className="text-xs text-muted-foreground">{card.complexity}</div>
+                  )}
+                  <div className="mt-auto flex justify-end gap-2 pt-1">
+                    <Button
+                      variant="outline"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => mark('missed')}
+                    >
+                      Missed it
+                    </Button>
+                    <Button
+                      className="bg-success text-white hover:bg-success/90"
+                      onClick={() => mark('got')}
+                    >
+                      Got it
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-1 items-center justify-center">
+                  <Button variant="outline" onClick={() => setRevealed(true)}>
+                    Reveal
                   </Button>
                 </div>
-              </>
-            ) : (
-              <div className="flashcards-hidden">
-                <Button variant="outlined" size="small" onClick={() => setRevealed(true)}>
-                  Reveal
-                </Button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="flashcards-empty">{emptyMessage}</div>
-      )}
+        ) : (
+          <div className="rounded-md border border-dashed p-8 text-center text-[13px] text-subtle-foreground">
+            {emptyMessage}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,24 +1,40 @@
 import React from 'react';
-import Button from '@mui/material/Button';
-import Modal from '@mui/material/Modal';
-import Box from '@mui/material/Box';
-import TextField from '@mui/material/TextField';
-import InputAdornment from '@mui/material/InputAdornment';
-import MenuItem from '@mui/material/MenuItem';
-import IconButton from '@mui/material/IconButton';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import DialogActions from '@mui/material/DialogActions';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
-import AddIcon from '@mui/icons-material/Add';
-import ClearIcon from '@mui/icons-material/Clear';
-import type { ApplicationEvent, ApplicationEventType, JobApplication } from '../types';
 import { useQueryClient } from '@tanstack/react-query';
+import dayjs from 'dayjs';
+import { PlusIcon, Trash2Icon } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import type { ApplicationEvent, ApplicationEventType, JobApplication } from '../types';
 import { DatePicker } from './DatePicker';
 import { TimePicker } from './TimePicker';
 import { EventCalendarLink } from './EventCalendarLink';
+import { Field } from './Field';
+import { SalaryRangeFields, SourceSelect } from './ApplicationFields';
 import {
   DEFAULT_EVENT_DURATION,
   durationOptions,
@@ -26,23 +42,7 @@ import {
   eventTypes,
   formatDuration,
 } from '../eventTypes';
-import dayjs from 'dayjs';
 import { isValidEmail } from '../validation';
-
-const style = {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  width: 560,
-  maxHeight: '90vh',
-  overflowY: 'auto',
-  bgcolor: 'background.paper',
-  // border: '2px solid #000',
-  boxShadow: 24,
-  borderRadius: '5px',
-  p: 4,
-};
 
 // Client-only id so React can track event rows across add/remove/reorder.
 // Stripped before saving, so it never reaches the server.
@@ -81,6 +81,7 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
   const [deleting, setDeleting] = React.useState(false);
 
   const queryClient = useQueryClient();
+  const id = React.useId();
 
   // Invites linked to this application when the modal opened
   const ownUids = React.useMemo(
@@ -93,7 +94,6 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
   const salaryInvalid =
     salaryMin !== '' && salaryMax !== '' && Number(salaryMin) > Number(salaryMax);
   const emailInvalid = !isValidEmail(contactEmail);
-  const hasSalary = salaryMin !== '' || salaryMax !== '';
   const toSalary = (val: string) => (val === '' ? null : Number(val));
 
   const updateEvent = (id: string, changes: Partial<ApplicationEvent>) => {
@@ -168,192 +168,165 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
   };
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <Box sx={style}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <TextField
-            label="Company Name"
-            variant="outlined"
-            onChange={(e) => {
-              setCompanyName(e.target.value);
-            }}
-            value={companyName}
-            autoComplete="off"
-          />
-          <TextField
-            label="Role"
-            variant="outlined"
-            onChange={(e) => {
-              setRole(e.target.value);
-            }}
-            value={role}
-            autoComplete="off"
-          />
-          <TextField
-            label="Location"
-            variant="outlined"
-            onChange={(e) => {
-              setLocation(e.target.value);
-            }}
-            value={location}
-            autoComplete="off"
-          />
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <TextField
-              label="Contact Name"
-              variant="outlined"
-              value={contactName}
-              onChange={(e) => setContactName(e.target.value)}
-              style={{ flex: 1 }}
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent
+        aria-describedby={undefined}
+        className="max-h-[90vh] grid-cols-[minmax(0,1fr)] overflow-y-auto sm:max-w-[560px]"
+      >
+        <DialogHeader>
+          <DialogTitle className="text-base">Edit application</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col gap-3">
+          <Field label="Company name" htmlFor={`${id}-company`}>
+            <Input
+              id={`${id}-company`}
+              value={companyName ?? ''}
+              onChange={(e) => setCompanyName(e.target.value)}
               autoComplete="off"
             />
-            <TextField
-              label="Contact Email"
-              type="email"
-              variant="outlined"
-              value={contactEmail}
-              onChange={(e) => setContactEmail(e.target.value)}
-              error={emailInvalid}
-              helperText={emailInvalid ? 'Enter a valid email' : undefined}
-              style={{ flex: 1 }}
+          </Field>
+          <Field label="Role" htmlFor={`${id}-role`}>
+            <Input
+              id={`${id}-role`}
+              value={role ?? ''}
+              onChange={(e) => setRole(e.target.value)}
               autoComplete="off"
             />
+          </Field>
+          <Field label="Location" htmlFor={`${id}-location`}>
+            <Input
+              id={`${id}-location`}
+              value={location ?? ''}
+              onChange={(e) => setLocation(e.target.value)}
+              autoComplete="off"
+            />
+          </Field>
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Contact name" htmlFor={`${id}-contact-name`}>
+              <Input
+                id={`${id}-contact-name`}
+                value={contactName}
+                onChange={(e) => setContactName(e.target.value)}
+                autoComplete="off"
+              />
+            </Field>
+            <Field
+              label="Contact email"
+              htmlFor={`${id}-contact-email`}
+              error={emailInvalid ? 'Enter a valid email' : undefined}
+            >
+              <Input
+                id={`${id}-contact-email`}
+                type="email"
+                value={contactEmail}
+                onChange={(e) => setContactEmail(e.target.value)}
+                aria-invalid={emailInvalid || undefined}
+                autoComplete="off"
+              />
+            </Field>
           </div>
-          <TextField
-            select
-            label="Source"
-            variant="outlined"
-            value={source ?? ''}
-            onChange={(e) => {
-              setSource(e.target.value as 'inbound' | 'outbound');
-            }}
-          >
-            <MenuItem value="outbound">Outbound</MenuItem>
-            <MenuItem value="inbound">Inbound</MenuItem>
-          </TextField>
-          <DatePicker
-            value={applicationDate}
-            onChange={(val) => setApplicationDate(val)}
+          <div className="grid grid-cols-2 gap-2">
+            <SourceSelect value={source} onChange={setSource} />
+            <Field label="Application date" htmlFor={`${id}-date`}>
+              <DatePicker
+                id={`${id}-date`}
+                value={applicationDate}
+                onChange={setApplicationDate}
+              />
+            </Field>
+          </div>
+          <SalaryRangeFields
+            min={salaryMin}
+            max={salaryMax}
+            onMinChange={setSalaryMin}
+            onMaxChange={setSalaryMax}
+            invalid={salaryInvalid}
           />
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            Salary Range (optional)
-            {hasSalary && (
-              <Button
-                size="small"
-                color="error"
-                startIcon={<ClearIcon />}
-                onClick={() => {
-                  setSalaryMin('');
-                  setSalaryMax('');
-                }}
-              >
-                Clear
-              </Button>
-            )}
-          </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <TextField
-              label="Min"
-              type="number"
-              size="small"
-              value={salaryMin}
-              onChange={(e) => setSalaryMin(e.target.value)}
-              error={salaryInvalid}
-              helperText={salaryInvalid ? 'Min must be ≤ max' : undefined}
-              autoComplete="off"
-              style={{ flex: 1 }}
-              slotProps={{
-                input: { startAdornment: <InputAdornment position="start">$</InputAdornment> },
-                htmlInput: { min: 0, step: 1000 },
-              }}
-            />
-            <TextField
-              label="Max"
-              type="number"
-              size="small"
-              value={salaryMax}
-              onChange={(e) => setSalaryMax(e.target.value)}
-              error={salaryInvalid}
-              autoComplete="off"
-              style={{ flex: 1 }}
-              slotProps={{
-                input: { startAdornment: <InputAdornment position="start">$</InputAdornment> },
-                htmlInput: { min: 0, step: 1000 },
-              }}
-            />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            Interviews
-            <Button size="small" startIcon={<AddIcon />} onClick={addEvent}>
-              Add Event
+
+          <div className="mt-1 flex items-center justify-between">
+            <h3 className="m-0 text-[13px] font-semibold">Interviews</h3>
+            <Button variant="ghost" size="sm" onClick={addEvent}>
+              <PlusIcon />
+              Add event
             </Button>
           </div>
+          {events.length === 0 && (
+            <p className="m-0 rounded-md border border-dashed px-3 py-4 text-center text-xs text-subtle-foreground">
+              No events yet
+            </p>
+          )}
           {events.toReversed().map((e) => (
             <div
               key={e._id}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px',
-                padding: '10px',
-                borderLeft: `3px solid ${eventTypes[e.type]?.color ?? '#b8b8b8'}`,
-                backgroundColor: '#f8fafc',
-                borderRadius: '4px',
-              }}
+              className="flex flex-col gap-2 rounded-md border border-l-[3px] bg-muted/40 p-3"
+              style={{ borderLeftColor: eventTypes[e.type]?.color ?? 'var(--subtle-foreground)' }}
             >
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <TextField
-                  select
-                  label="Type"
-                  size="small"
+              <div className="flex items-center gap-2">
+                <Select
                   value={e.type}
-                  onChange={(ev) =>
-                    updateEvent(e._id, { type: ev.target.value as ApplicationEventType })
-                  }
-                  style={{ flex: 1 }}
+                  onValueChange={(v) => updateEvent(e._id, { type: v as ApplicationEventType })}
                 >
-                  {Object.entries(eventTypes).map(([value, { label }]) => (
-                    <MenuItem key={value} value={value}>
-                      {label}
-                    </MenuItem>
-                  ))}
-                </TextField>
-                <IconButton aria-label="Remove event" onClick={() => removeEvent(e._id)}>
-                  <DeleteOutlineIcon />
-                </IconButton>
+                  <SelectTrigger aria-label="Event type" className="flex-1 bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(eventTypes).map(([value, { label, color }]) => (
+                      <SelectItem key={value} value={value}>
+                        <span
+                          className="size-2 rounded-full"
+                          style={{ backgroundColor: color }}
+                          aria-hidden="true"
+                        />
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Remove event"
+                  className="text-muted-foreground hover:text-destructive"
+                  onClick={() => removeEvent(e._id)}
+                >
+                  <Trash2Icon />
+                </Button>
               </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2">
                 <DatePicker
-                  label="Date"
                   value={dayjs(e.date)}
                   onChange={(val) => updateEvent(e._id, { date: val.format('YYYY-MM-DD') })}
+                  className="bg-background"
                 />
                 <TimePicker
-                  value={e.time ? dayjs(`${e.date}T${e.time}`) : null}
-                  onChange={(val) => updateEvent(e._id, { time: val ? val.format('HH:mm') : null })}
+                  value={e.time ?? null}
+                  onChange={(time) => updateEvent(e._id, { time })}
                 />
-                <TextField
-                  select
-                  label="Duration"
-                  value={e.duration ?? DEFAULT_EVENT_DURATION}
-                  onChange={(ev) => updateEvent(e._id, { duration: Number(ev.target.value) })}
-                  style={{ minWidth: 110 }}
+                <Select
+                  value={String(e.duration ?? DEFAULT_EVENT_DURATION)}
+                  onValueChange={(v) => updateEvent(e._id, { duration: Number(v) })}
                 >
-                  {[...new Set([...durationOptions, e.duration ?? DEFAULT_EVENT_DURATION])]
-                    .sort((a, b) => a - b)
-                    .map((m) => (
-                      <MenuItem key={m} value={m}>
-                        {formatDuration(m)}
-                      </MenuItem>
-                    ))}
-                </TextField>
+                  <SelectTrigger aria-label="Duration" className="w-full bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[...new Set([...durationOptions, e.duration ?? DEFAULT_EVENT_DURATION])]
+                      .sort((a, b) => a - b)
+                      .map((m) => (
+                        <SelectItem key={m} value={String(m)}>
+                          {formatDuration(m)}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <TextField
-                label="Event Notes"
-                size="small"
+              <Input
+                aria-label="Event notes"
+                placeholder="Event notes"
                 value={e.notes ?? ''}
                 onChange={(ev) => updateEvent(e._id, { notes: ev.target.value })}
                 autoComplete="off"
+                className="bg-background"
               />
               <EventCalendarLink
                 event={e}
@@ -363,59 +336,63 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
               />
             </div>
           ))}
-          <TextField
-            label="Notes"
-            variant="outlined"
-            multiline
-            minRows={3}
-            maxRows={10}
-            onChange={(e) => {
-              setNotes(e.target.value);
-            }}
-            value={notes}
-          />
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
-            <Button
-              size="small"
-              color="error"
-              startIcon={<DeleteOutlineIcon />}
-              onClick={() => setConfirmDeleteOpen(true)}
-            >
-              Delete
+
+          <Field label="Notes" htmlFor={`${id}-notes`}>
+            <Textarea
+              id={`${id}-notes`}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="min-h-20 max-h-60"
+            />
+          </Field>
+        </div>
+        <DialogFooter className="sm:justify-between">
+          <Button
+            variant="ghost"
+            className="text-destructive hover:text-destructive"
+            onClick={() => setConfirmDeleteOpen(true)}
+          >
+            <Trash2Icon />
+            Delete
+          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose}>
+              Cancel
             </Button>
             <Button
-              size="small"
-              variant="contained"
               disabled={!role?.length || !companyName?.length || salaryInvalid || emailInvalid}
               onClick={updateApplication}
             >
               Save
             </Button>
           </div>
-        </div>
-        <Dialog open={confirmDeleteOpen} onClose={() => setConfirmDeleteOpen(false)}>
-          <DialogTitle>Delete application?</DialogTitle>
-          <DialogContent>
-            <DialogContentText>
-              This will permanently delete the {data.role} application at {data.name},
-              including its events and notes. This can't be undone.
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setConfirmDeleteOpen(false)} disabled={deleting}>
-              Cancel
-            </Button>
-            <Button
-              color="error"
-              variant="contained"
-              onClick={deleteApplication}
-              disabled={deleting}
-            >
-              Delete
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </Box>
-    </Modal>
+        </DialogFooter>
+        <AlertDialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete application?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete the {data.role} application at {data.name},
+                including its events and notes. This can't be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-white hover:bg-destructive/90"
+                disabled={deleting}
+                onClick={(ev) => {
+                  // Keep the dialog open until the delete finishes
+                  ev.preventDefault();
+                  deleteApplication();
+                }}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </DialogContent>
+    </Dialog>
   );
 }

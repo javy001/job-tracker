@@ -4,8 +4,8 @@ import type { ApplicationEvent, JobApplication } from '../types';
 import { eventTypes } from '../eventTypes';
 import { UpdateApplicationModal } from './UpdateApplicationModal';
 import { useApplications } from '../hooks/useApplications';
-import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import { ArrowDownIcon, ArrowUpIcon } from 'lucide-react';
+import { Section } from './Section';
 
 const columns: { label: string; name: keyof JobApplication | string }[] = [
   {
@@ -77,15 +77,18 @@ export function JobsTable({
           data={clickedRow}
         />
       )}
-      <div className="table-container">
-        <table className="modern-table">
+      <Section title="Applications" bodyClassName="p-0">
+        <div className="relative max-h-[500px] overflow-auto">
+        <table className="w-full border-collapse text-left text-[13px]">
           <thead>
-            <tr>
+            <tr className="sticky top-0 z-[1] bg-card shadow-[inset_0_-1px_0_var(--border)]">
               {columns.map((c) => {
+                const sorted = sortColumn === c.name;
                 return (
                   <th
                     key={c.label}
-                    style={{ cursor: 'pointer' }}
+                    aria-sort={sorted ? (sortDirection === 'asc' ? 'ascending' : 'descending') : undefined}
+                    className="h-9 cursor-pointer px-4 text-xs font-medium whitespace-nowrap text-muted-foreground select-none hover:text-foreground"
                     onClick={() => {
                       if (sortDirection === 'asc') {
                         setSortDirection('desc');
@@ -95,14 +98,10 @@ export function JobsTable({
                       setSortColumn(c.name);
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <div className="flex items-center gap-1">
                       <div>{c.label}</div>
-                      {sortColumn === c.name && sortDirection === 'asc' && (
-                        <ArrowUpwardIcon />
-                      )}
-                      {sortColumn === c.name && sortDirection === 'desc' && (
-                        <ArrowDownwardIcon />
-                      )}
+                      {sorted && sortDirection === 'asc' && <ArrowUpIcon className="size-3" />}
+                      {sorted && sortDirection === 'desc' && <ArrowDownIcon className="size-3" />}
                     </div>
                   </th>
                 );
@@ -138,18 +137,22 @@ export function JobsTable({
               .map((d) => {
                 const latestEvent = getLatestEvent(d);
                 return (
-                  <tr key={d.id} onClick={() => setClickedRow(d)}>
-                    <td>{d.name}</td>
-                    <td>{d.role}</td>
-                    <td>{d.date_applied ? dayjs(d.date_applied).format('M/D/YYYY') : '—'}</td>
+                  <tr
+                    key={d.id}
+                    className="h-9 cursor-pointer border-b transition-colors last:border-b-0 hover:bg-accent/60 [&>td]:px-4"
+                    onClick={() => setClickedRow(d)}
+                  >
+                    <td className="font-medium">{d.name}</td>
+                    <td className="text-muted-foreground">{d.role}</td>
+                    <td className="whitespace-nowrap tabular-nums">{d.date_applied ? dayjs(d.date_applied).format('M/D/YYYY') : '—'}</td>
                     <td>{sourceLabels[d.source ?? ''] ?? '—'}</td>
-                    <td>
+                    <td className="whitespace-nowrap">
                       {latestEvent
                         ? `${latestEventLabel(d)} · ${dayjs(latestEvent.date).format('MMM D')}`
                         : '—'}
                     </td>
-                    <td>{d.location}</td>
-                    <td>
+                    <td className="text-muted-foreground">{d.location}</td>
+                    <td className="whitespace-nowrap tabular-nums">
                       {d.salary_min == null && d.salary_max == null
                         ? '—'
                         : [d.salary_min, d.salary_max]
@@ -161,7 +164,8 @@ export function JobsTable({
               })}
           </tbody>
         </table>
-      </div>
+        </div>
+      </Section>
     </>
   );
 }

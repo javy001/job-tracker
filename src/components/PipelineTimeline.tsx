@@ -1,5 +1,7 @@
 import React from 'react';
+import { cn } from '@/lib/utils';
 import { Card } from './Card';
+import { Section } from './Section';
 import { UpdateApplicationModal } from './UpdateApplicationModal';
 import { useApplications } from '../hooks/useApplications';
 import type { JobApplication } from '../types';
@@ -12,9 +14,8 @@ const minWidth = 400;
 const margins = { top: 20, bottom: 30, left: 180, right: 20 };
 const fontSize = 12;
 
-const axisColor = '#b8b8b8';
-const fontColor = '#808080';
-const barColor = '#94a3b8';
+// Fallback dot color for unknown event types; axis/text/bar colors come from theme classes
+const barColor = 'var(--subtle-foreground)';
 
 const dateFormatter = d3.timeFormat('%b %d');
 
@@ -110,7 +111,7 @@ export function PipelineTimeline() {
         y1={margins.top}
         x2={margins.left}
         y2={height - margins.bottom}
-        stroke={axisColor}
+        className="stroke-border-strong"
       />
       {applications.map((d) => {
         const yPos = (yScale(d.id) ?? 0) + yScale.bandwidth() / 2;
@@ -122,7 +123,7 @@ export function PipelineTimeline() {
               textAnchor="end"
               fontSize={fontSize}
               dy={3}
-              fill={fontColor}
+              className="fill-subtle-foreground"
             >
               {d.name}
             </text>
@@ -131,7 +132,7 @@ export function PipelineTimeline() {
               y1={yPos}
               x2={margins.left}
               y2={yPos}
-              stroke={axisColor}
+              className="stroke-border-strong"
             />
           </g>
         );
@@ -146,7 +147,7 @@ export function PipelineTimeline() {
         y1={height - margins.bottom}
         x2={width - margins.right}
         y2={height - margins.bottom}
-        stroke={axisColor}
+        className="stroke-border-strong"
       />
       {xScale
         .ticks(Math.max(Math.floor((width - margins.left) / 90), 2))
@@ -157,14 +158,14 @@ export function PipelineTimeline() {
           const yPos = height - margins.bottom;
           return (
             <g key={`${i}-xtick`}>
-              <line x1={xPos} y1={yPos} x2={xPos} y2={yPos + 5} stroke={axisColor} />
+              <line x1={xPos} y1={yPos} x2={xPos} y2={yPos + 5} className="stroke-border-strong" />
               <text
                 x={xPos}
                 y={yPos + 5}
                 fontSize={fontSize}
                 dy={12}
                 textAnchor="middle"
-                fill={fontColor}
+                className="fill-subtle-foreground"
               >
                 {dateFormatter(t)}
               </text>
@@ -194,8 +195,8 @@ export function PipelineTimeline() {
           y={margins.top}
           width={band.width}
           height={height - margins.top - margins.bottom}
-          fill={axisColor}
-          opacity={0.15}
+          className="fill-foreground"
+          opacity={0.035}
         />
       ))}
     </g>
@@ -208,7 +209,7 @@ export function PipelineTimeline() {
         y1={margins.top}
         x2={xScale(today)}
         y2={height - margins.bottom}
-        stroke={axisColor}
+        className="stroke-border-strong"
         strokeDasharray="4 3"
       />
       <text
@@ -216,7 +217,7 @@ export function PipelineTimeline() {
         y={margins.top - 6}
         fontSize={fontSize}
         textAnchor="middle"
-        fill={fontColor}
+        className="fill-subtle-foreground"
       >
         Today
       </text>
@@ -236,8 +237,8 @@ export function PipelineTimeline() {
             y={y - (yScale.step() - yScale.bandwidth()) / 2}
             height={yScale.step()}
             width={width - margins.left - margins.right}
-            fill={'grey'}
-            opacity={0.08}
+            className="fill-foreground"
+            opacity={0.06}
           />
         )}
         <rect
@@ -246,8 +247,8 @@ export function PipelineTimeline() {
           height={yScale.bandwidth()}
           width={Math.max(end - start, 2)}
           rx={3}
-          fill={barColor}
-          fillOpacity={isClosed(d) ? 0.15 : 0.3}
+          className="fill-subtle-foreground"
+          fillOpacity={isClosed(d) ? 0.15 : 0.35}
         />
         {d.events.map((e, i) => (
           <circle
@@ -256,7 +257,7 @@ export function PipelineTimeline() {
             cy={y + yScale.bandwidth() / 2}
             r={5}
             fill={eventTypes[e.type]?.color ?? barColor}
-            stroke="white"
+            className="stroke-card"
             strokeWidth={1.5}
           />
         ))}
@@ -281,57 +282,37 @@ export function PipelineTimeline() {
   });
 
   const filterControl = (
-    <div
-      style={{
-        display: 'flex',
-        gap: '6px',
-        fontSize: `${fontSize}px`,
-        alignItems: 'center',
-        marginBottom: '10px',
-        marginLeft: `${margins.left}px`,
-      }}
-    >
+    <div className="flex items-center gap-1 rounded-md bg-muted p-0.5">
       {eventFilterOptions.map(({ value, label }) => {
         const selected = eventFilter === value;
         return (
           <button
             key={value}
             type="button"
+            aria-pressed={selected}
             onClick={() => setEventFilter(value)}
-            style={{
-              padding: '4px 10px',
-              borderRadius: '999px',
-              border: `1px solid ${selected ? barColor : axisColor}`,
-              backgroundColor: selected ? barColor : 'transparent',
-              color: selected ? 'white' : fontColor,
-              fontSize: `${fontSize}px`,
-              cursor: 'pointer',
-            }}
+            className={cn(
+              'h-6 cursor-pointer rounded-[5px] px-2.5 text-xs text-muted-foreground transition-colors hover:text-foreground',
+              selected && 'bg-background text-foreground shadow-xs dark:bg-accent',
+            )}
           >
             {label}
           </button>
         );
       })}
-      <div style={{ marginLeft: 'auto', color: fontColor }}>
-        <span style={{ fontWeight: 600 }}>{applications.length}</span>
-        {applications.length !== totalCount && ` of ${totalCount}`}{' '}
-        {totalCount === 1 ? 'application' : 'applications'}
-      </div>
     </div>
   );
 
+  const count = (
+    <span className="text-xs text-muted-foreground tabular-nums">
+      <span className="font-semibold text-foreground">{applications.length}</span>
+      {applications.length !== totalCount && ` of ${totalCount}`}{' '}
+      {totalCount === 1 ? 'application' : 'applications'}
+    </span>
+  );
+
   const legend = (
-    <div
-      style={{
-        display: 'flex',
-        gap: '14px',
-        flexWrap: 'wrap',
-        fontSize: `${fontSize}px`,
-        color: fontColor,
-        marginBottom: '6px',
-        marginLeft: `${margins.left}px`,
-      }}
-    >
+    <div className="mb-1.5 flex flex-wrap gap-x-3.5 gap-y-1 text-xs" style={{ marginLeft: margins.left }}>
       {Object.entries(eventTypes).map(([type, { label, color }]) => {
         const hidden = hiddenEventTypes.has(type);
         return (
@@ -348,28 +329,15 @@ export function PipelineTimeline() {
                 return next;
               })
             }
-            style={{
-              display: 'flex',
-              gap: '5px',
-              alignItems: 'center',
-              padding: 0,
-              border: 'none',
-              background: 'none',
-              color: fontColor,
-              fontSize: `${fontSize}px`,
-              cursor: 'pointer',
-              opacity: hidden ? 0.4 : 1,
-              textDecoration: hidden ? 'line-through' : 'none',
-            }}
+            className={cn(
+              'flex cursor-pointer items-center gap-1.5 text-muted-foreground hover:text-foreground',
+              hidden && 'line-through opacity-40',
+            )}
           >
-            <div
-              style={{
-                height: '10px',
-                width: '10px',
-                borderRadius: '50%',
-                backgroundColor: hidden ? axisColor : color,
-              }}
-            ></div>
+            <span
+              className="size-2.5 rounded-full"
+              style={{ backgroundColor: hidden ? 'var(--border-strong)' : color }}
+            />
             {label}
           </button>
         );
@@ -390,22 +358,20 @@ export function PipelineTimeline() {
           left: `${start + (end - start) / 2}px`,
           transform: 'translate(-50%, -100%)',
           pointerEvents: 'none',
+          zIndex: 5,
+          whiteSpace: 'nowrap',
         }}
       >
         <Card>
-          <div style={{ fontWeight: 500 }}>{d.name}</div>
-          <div style={{ color: fontColor, marginBottom: '4px' }}>{d.role}</div>
+          <div className="text-[13px] font-medium">{d.name}</div>
+          <div className="mb-1 text-muted-foreground">{d.role}</div>
           <div>Applied {dayjs(d.date_applied).format('ddd, MMM D')}</div>
           {d.events.map((e, i) => (
-            <div key={i} style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-              <div
-                style={{
-                  height: '8px',
-                  width: '8px',
-                  borderRadius: '50%',
-                  backgroundColor: eventTypes[e.type]?.color ?? barColor,
-                }}
-              ></div>
+            <div key={i} className="flex items-center gap-1.5">
+              <span
+                className="size-2 rounded-full"
+                style={{ backgroundColor: eventTypes[e.type]?.color ?? barColor }}
+              />
               {eventTypes[e.type]?.label ?? e.type} · {dayjs(e.date).format('ddd, MMM D')}
               {e.time && ` · ${formatEventTime(e)}`}
             </div>
@@ -416,7 +382,15 @@ export function PipelineTimeline() {
   }
 
   return (
-    <div style={{ width: '100%' }}>
+    <Section
+      title="Pipeline"
+      actions={
+        <div className="flex items-center gap-3">
+          {count}
+          {filterControl}
+        </div>
+      }
+    >
       {clickedRow && (
         <UpdateApplicationModal
           open={!!clickedRow}
@@ -424,20 +398,17 @@ export function PipelineTimeline() {
           data={clickedRow}
         />
       )}
-      <Card>
-        {filterControl}
-        {legend}
-        <div ref={containerRef} style={{ position: 'relative' }}>
-          <svg height={height} width={width}>
-            {weekends}
-            {xAxis}
-            {todayLine}
-            {rows}
-            {yAxis}
-          </svg>
-          {tooltip}
-        </div>
-      </Card>
-    </div>
+      {legend}
+      <div ref={containerRef} className="relative">
+        <svg height={height} width={width} className="block">
+          {weekends}
+          {xAxis}
+          {todayLine}
+          {rows}
+          {yAxis}
+        </svg>
+        {tooltip}
+      </div>
+    </Section>
   );
 }

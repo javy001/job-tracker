@@ -1,29 +1,20 @@
 import React from 'react';
-import Button from '@mui/material/Button';
-import Modal from '@mui/material/Modal';
-import Box from '@mui/material/Box';
-import TextField from '@mui/material/TextField';
-import InputAdornment from '@mui/material/InputAdornment';
-import MenuItem from '@mui/material/MenuItem';
-import ClearIcon from '@mui/icons-material/Clear';
 import { useQueryClient } from '@tanstack/react-query';
-import { DatePicker } from './DatePicker';
 import dayjs from 'dayjs';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { DatePicker } from './DatePicker';
+import { Field } from './Field';
+import { SalaryRangeFields, SourceSelect } from './ApplicationFields';
 import { isValidEmail } from '../validation';
-
-const style = {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  width: 560,
-  maxHeight: '90vh',
-  overflowY: 'auto',
-  bgcolor: 'background.paper',
-  boxShadow: 24,
-  borderRadius: '5px',
-  p: 4,
-};
 
 interface Props {
   open: boolean;
@@ -49,7 +40,6 @@ export function AddApplicationModal({ open, onClose }: Props) {
   const salaryInvalid =
     salaryMin !== '' && salaryMax !== '' && Number(salaryMin) > Number(salaryMax);
   const emailInvalid = !isValidEmail(contactEmail);
-  const hasSalary = salaryMin !== '' || salaryMax !== '';
   const toSalary = (val: string) => (val === '' ? null : Number(val));
 
   // The modal stays mounted in App, so clear the form after a successful save
@@ -99,131 +89,101 @@ export function AddApplicationModal({ open, onClose }: Props) {
       .finally(() => setSaving(false));
   };
 
-  const noAutofill = { htmlInput: { autoComplete: 'new-password' } };
+  // Stops browsers offering saved addresses/passwords in these fields
+  const noAutofill = 'new-password';
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <Box sx={style}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <TextField
-            label="Company Name"
-            variant="outlined"
-            value={companyName}
-            onChange={(e) => setCompanyName(e.target.value)}
-            slotProps={noAutofill}
-          />
-          <TextField
-            label="Role"
-            variant="outlined"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            slotProps={noAutofill}
-          />
-          <TextField
-            label="Location"
-            variant="outlined"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            slotProps={noAutofill}
-          />
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <TextField
-              label="Contact Name"
-              variant="outlined"
-              value={contactName}
-              onChange={(e) => setContactName(e.target.value)}
-              style={{ flex: 1 }}
-              slotProps={noAutofill}
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent
+        aria-describedby={undefined}
+        className="max-h-[90vh] grid-cols-[minmax(0,1fr)] overflow-y-auto sm:max-w-[560px]"
+      >
+        <DialogHeader>
+          <DialogTitle className="text-base">Add application</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col gap-3">
+          <Field label="Company name" htmlFor="add-company">
+            <Input
+              id="add-company"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              autoComplete={noAutofill}
             />
-            <TextField
-              label="Contact Email"
-              type="email"
-              variant="outlined"
-              value={contactEmail}
-              onChange={(e) => setContactEmail(e.target.value)}
-              error={emailInvalid}
-              helperText={emailInvalid ? 'Enter a valid email' : undefined}
-              style={{ flex: 1 }}
-              slotProps={noAutofill}
+          </Field>
+          <Field label="Role" htmlFor="add-role">
+            <Input
+              id="add-role"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              autoComplete={noAutofill}
             />
+          </Field>
+          <Field label="Location" htmlFor="add-location">
+            <Input
+              id="add-location"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              autoComplete={noAutofill}
+            />
+          </Field>
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Contact name" htmlFor="add-contact-name">
+              <Input
+                id="add-contact-name"
+                value={contactName}
+                onChange={(e) => setContactName(e.target.value)}
+                autoComplete={noAutofill}
+              />
+            </Field>
+            <Field
+              label="Contact email"
+              htmlFor="add-contact-email"
+              error={emailInvalid ? 'Enter a valid email' : undefined}
+            >
+              <Input
+                id="add-contact-email"
+                type="email"
+                value={contactEmail}
+                onChange={(e) => setContactEmail(e.target.value)}
+                aria-invalid={emailInvalid || undefined}
+                autoComplete={noAutofill}
+              />
+            </Field>
           </div>
-          <TextField
-            select
-            label="Source"
-            variant="outlined"
-            value={source}
-            onChange={(e) => setSource(e.target.value as 'inbound' | 'outbound')}
-          >
-            <MenuItem value="outbound">Outbound</MenuItem>
-            <MenuItem value="inbound">Inbound</MenuItem>
-          </TextField>
-          <DatePicker value={date} onChange={(val) => setDate(val)} />
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            Salary Range (optional)
-            {hasSalary && (
-              <Button
-                size="small"
-                color="error"
-                startIcon={<ClearIcon />}
-                onClick={() => {
-                  setSalaryMin('');
-                  setSalaryMax('');
-                }}
-              >
-                Clear
-              </Button>
-            )}
+          <div className="grid grid-cols-2 gap-2">
+            <SourceSelect value={source} onChange={setSource} />
+            <Field label="Application date" htmlFor="add-date">
+              <DatePicker id="add-date" value={date} onChange={setDate} />
+            </Field>
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <TextField
-              label="Min"
-              type="number"
-              size="small"
-              value={salaryMin}
-              onChange={(e) => setSalaryMin(e.target.value)}
-              error={salaryInvalid}
-              helperText={salaryInvalid ? 'Min must be ≤ max' : undefined}
-              autoComplete="off"
-              style={{ flex: 1 }}
-              slotProps={{
-                input: { startAdornment: <InputAdornment position="start">$</InputAdornment> },
-                htmlInput: { min: 0, step: 1000 },
-              }}
-            />
-            <TextField
-              label="Max"
-              type="number"
-              size="small"
-              value={salaryMax}
-              onChange={(e) => setSalaryMax(e.target.value)}
-              error={salaryInvalid}
-              autoComplete="off"
-              style={{ flex: 1 }}
-              slotProps={{
-                input: { startAdornment: <InputAdornment position="start">$</InputAdornment> },
-                htmlInput: { min: 0, step: 1000 },
-              }}
-            />
-          </div>
-          <TextField
-            label="Notes"
-            variant="outlined"
-            multiline
-            minRows={3}
-            maxRows={10}
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
+          <SalaryRangeFields
+            min={salaryMin}
+            max={salaryMax}
+            onMinChange={setSalaryMin}
+            onMaxChange={setSalaryMax}
+            invalid={salaryInvalid}
           />
+          <Field label="Notes" htmlFor="add-notes">
+            <Textarea
+              id="add-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="min-h-20 max-h-60"
+            />
+          </Field>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
           <Button
-            size="small"
-            variant="contained"
             disabled={!role.length || !companyName.length || salaryInvalid || emailInvalid || saving}
             onClick={addApplication}
           >
             Save
           </Button>
-        </div>
-      </Box>
-    </Modal>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

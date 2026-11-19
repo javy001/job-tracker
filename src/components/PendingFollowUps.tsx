@@ -4,8 +4,10 @@ import type { ApplicationEvent, JobApplication } from '../types';
 import { closingEventTypes, eventSortKey, eventTypes } from '../eventTypes';
 import { UpdateApplicationModal } from './UpdateApplicationModal';
 import { useApplications } from '../hooks/useApplications';
+import { eventBlock, eventBlockStyle } from '@/lib/styles';
+import { Section } from './Section';
 
-const barColor = '#94a3b8';
+const barColor = 'var(--subtle-foreground)';
 
 interface FollowUp {
   application: JobApplication;
@@ -45,7 +47,14 @@ export function PendingFollowUps() {
   const followUps = getFollowUps(data);
 
   return (
-    <div className="week-calendar">
+    <Section
+      title={
+        <>
+          Pending follow-ups{' '}
+          <span className="font-normal text-subtle-foreground tabular-nums">{followUps.length}</span>
+        </>
+      }
+    >
       {clickedRow && (
         <UpdateApplicationModal
           open={!!clickedRow}
@@ -53,28 +62,25 @@ export function PendingFollowUps() {
           data={clickedRow}
         />
       )}
-      <div className="week-calendar-header">
-        <div className="week-calendar-title">Pending Follow-ups ({followUps.length})</div>
-      </div>
       {followUps.length === 0 ? (
-        <div className="week-calendar-empty">Nothing to follow up on</div>
+        <div className="text-[13px] text-subtle-foreground">Nothing to follow up on</div>
       ) : (
-        <div className="follow-ups-list">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2">
           {followUps.map(({ application, lastEvent, daysSince }) => (
             <div
               key={application.id}
-              className="week-calendar-event"
-              style={{ borderLeftColor: eventTypes[lastEvent.type]?.color ?? barColor }}
+              className={eventBlock}
+              style={eventBlockStyle(eventTypes[lastEvent.type]?.color ?? barColor)}
               onClick={() => setClickedRow(application)}
             >
-              <div className="follow-ups-row">
-                <div className="week-calendar-event-type">{application.name}</div>
-                <div className="follow-ups-days">
+              <div className="flex items-baseline justify-between gap-2">
+                <div className="truncate font-medium">{application.name}</div>
+                <div className="whitespace-nowrap text-muted-foreground tabular-nums">
                   {daysSince === 1 ? '1 day ago' : `${daysSince} days ago`}
                 </div>
               </div>
-              <div className="week-calendar-event-role">{application.role}</div>
-              <div className="week-calendar-event-time">
+              <div className="truncate text-subtle-foreground">{application.role}</div>
+              <div className="text-muted-foreground">
                 Last: {eventTypes[lastEvent.type]?.label ?? lastEvent.type} on{' '}
                 {dayjs(lastEvent.date).format('MMM D')}
               </div>
@@ -82,6 +88,6 @@ export function PendingFollowUps() {
           ))}
         </div>
       )}
-    </div>
+    </Section>
   );
 }

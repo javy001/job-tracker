@@ -4,17 +4,10 @@ interface Props {
   children: React.ReactNode;
 }
 
+// Floating surface, used for chart tooltips
 export function Card({ children }: Props) {
   return (
-    <div
-      style={{
-        padding: '10px',
-        borderRadius: '5px',
-        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05), 0 10px 15px -3px rgba(0, 0, 0, 0.08)',
-        border: '1px solid rgba(0, 0, 0, 0.08)',
-        backgroundColor: 'white',
-      }}
-    >
+    <div className="rounded-lg border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-lg">
       {children}
     </div>
   );

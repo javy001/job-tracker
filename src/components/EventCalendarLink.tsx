@@ -1,12 +1,15 @@
 import React from 'react';
-import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
-import MenuItem from '@mui/material/MenuItem';
-import TextField from '@mui/material/TextField';
-import Tooltip from '@mui/material/Tooltip';
-import CloseIcon from '@mui/icons-material/Close';
-import EventAvailableIcon from '@mui/icons-material/EventAvailable';
-import EventBusyIcon from '@mui/icons-material/EventBusy';
+import { CalendarCheckIcon, CalendarXIcon, XIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 import type { ApplicationEvent, CalendarInvite } from '../types';
 import { formatSlot } from '../eventTypes';
 import { useCalendarInvites } from '../hooks/useCalendarInvites';
@@ -62,42 +65,41 @@ export function EventCalendarLink({ event, takenUids, ownUids, onChange }: Props
 
   if (picking) {
     return (
-      <div className="event-calendar-link">
-        <TextField
-          select
-          size="small"
-          label="Calendar invite"
-          value=""
-          onChange={(ev) => link(ev.target.value)}
-          style={{ flex: 1 }}
-          slotProps={{ select: { defaultOpen: true } }}
-        >
-          {candidates.length === 0 && (
-            <MenuItem value="" disabled>
-              No other invites available
-            </MenuItem>
-          )}
-          {candidates.map((i) => (
-            <MenuItem key={i.uid} value={i.uid}>
-              {i.title} · {formatSlot(i)}
-            </MenuItem>
-          ))}
-        </TextField>
-        <IconButton size="small" aria-label="Cancel" onClick={() => setPicking(false)}>
-          <CloseIcon fontSize="small" />
-        </IconButton>
+      <div className="flex min-h-7 items-center gap-1.5">
+        <Select defaultOpen onValueChange={link}>
+          <SelectTrigger aria-label="Calendar invite" className="min-w-0 flex-1 bg-background">
+            <SelectValue placeholder="Choose a calendar invite" />
+          </SelectTrigger>
+          <SelectContent>
+            {candidates.length === 0 && (
+              <SelectItem value="__none" disabled>
+                No other invites available
+              </SelectItem>
+            )}
+            {candidates.map((i) => (
+              <SelectItem key={i.uid} value={i.uid}>
+                {i.title} · {formatSlot(i)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button variant="ghost" size="icon" aria-label="Cancel" onClick={() => setPicking(false)}>
+          <XIcon />
+        </Button>
       </div>
     );
   }
 
   if (!event.calendar_uid) {
     return (
-      <div className="event-calendar-link">
+      <div className="flex min-h-7 items-center">
         <Button
-          size="small"
-          startIcon={<EventAvailableIcon fontSize="small" />}
+          variant="ghost"
+          size="sm"
+          className="-ml-2 text-muted-foreground"
           onClick={() => setPicking(true)}
         >
+          <CalendarCheckIcon />
           Link calendar invite
         </Button>
       </div>
@@ -112,17 +114,29 @@ export function EventCalendarLink({ event, takenUids, ownUids, onChange }: Props
       : 'Linked to a calendar invite';
 
   return (
-    <div className={`event-calendar-link linked${cancelled ? ' cancelled' : ''}`}>
-      {cancelled ? <EventBusyIcon fontSize="small" /> : <EventAvailableIcon fontSize="small" />}
-      <Tooltip title={description}>
-        <span className="event-calendar-link-text">{description}</span>
+    <div
+      className={cn(
+        'flex min-h-7 items-center gap-1.5 rounded-md py-0.5 pr-0.5 pl-2',
+        cancelled ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary dark:text-[#9db2ff]',
+      )}
+    >
+      {cancelled ? (
+        <CalendarXIcon className="size-3.5 shrink-0" />
+      ) : (
+        <CalendarCheckIcon className="size-3.5 shrink-0" />
+      )}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="min-w-0 flex-1 truncate text-xs">{description}</span>
+        </TooltipTrigger>
+        <TooltipContent>{description}</TooltipContent>
       </Tooltip>
       {data?.configured && (
-        <Button size="small" onClick={() => setPicking(true)}>
+        <Button variant="ghost" size="xs" onClick={() => setPicking(true)}>
           Change
         </Button>
       )}
-      <Button size="small" color="inherit" onClick={unlink}>
+      <Button variant="ghost" size="xs" className="text-muted-foreground" onClick={unlink}>
         Unlink
       </Button>
     </div>

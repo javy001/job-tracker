@@ -1,6 +1,8 @@
 import React from 'react';
-import Autocomplete from '@mui/material/Autocomplete';
-import TextField from '@mui/material/TextField';
+import { Command as CommandPrimitive } from 'cmdk';
+import { SearchIcon, XIcon } from 'lucide-react';
+import { Command, CommandItem, CommandList } from '@/components/ui/command';
+import { Button } from '@/components/ui/button';
 import type { JobApplication } from '../types';
 import { useApplications } from '../hooks/useApplications';
 import { UpdateApplicationModal } from './UpdateApplicationModal';
@@ -19,43 +21,76 @@ export function CompanySearch({ value, onChange }: Props) {
   const [selected, setSelected] = React.useState<JobApplication>();
 
   const term = value.trim().toLowerCase();
+  const matches = data.filter((a) => (a.name ?? '').toLowerCase().includes(term));
 
   return (
     <>
-      <Autocomplete<JobApplication, false, false, true>
-        freeSolo
-        size="small"
-        sx={{ width: 300 }}
-        options={data}
-        value={null}
-        open={open && term.length > 0}
-        onOpen={() => setOpen(true)}
-        onClose={() => setOpen(false)}
-        inputValue={value}
-        onInputChange={(_, newValue, reason) => {
-          // Keep what the user typed after they pick a result
-          if (reason !== 'reset') onChange(newValue);
+      <Command
+        shouldFilter={false}
+        className="relative h-auto w-full max-w-[300px] overflow-visible bg-transparent"
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') setOpen(false);
         }}
-        onChange={(_, option) => {
-          if (option && typeof option !== 'string') setSelected(option);
-        }}
-        filterOptions={(options) =>
-          options.filter((a) => (a.name ?? '').toLowerCase().includes(term))
-        }
-        getOptionLabel={(option) => (typeof option === 'string' ? option : option.name ?? '')}
-        getOptionKey={(option) => (typeof option === 'string' ? option : option.id)}
-        renderOption={({ key, ...props }, option) => (
-          <li key={key} {...props}>
-            <div>
-              <div style={{ fontWeight: 600 }}>{option.name}</div>
-              <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                {[option.role, option.status].filter(Boolean).join(' · ')}
-              </div>
-            </div>
-          </li>
+      >
+        <div className="flex h-8 items-center gap-2 rounded-md border border-input bg-transparent px-2.5 shadow-xs focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50 dark:bg-input/30">
+          <SearchIcon className="size-3.5 shrink-0 text-muted-foreground" />
+          <CommandPrimitive.Input
+            value={value}
+            onValueChange={(v) => {
+              onChange(v);
+              setOpen(true);
+            }}
+            onFocus={() => setOpen(true)}
+            onBlur={() => setOpen(false)}
+            placeholder="Search by company"
+            className="h-full w-full min-w-0 bg-transparent text-[13px] outline-none placeholder:text-muted-foreground"
+          />
+          {value && (
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              aria-label="Clear search"
+              className="-mr-1 text-muted-foreground"
+              // Keep focus in the input so the list doesn't flicker closed
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => onChange('')}
+            >
+              <XIcon />
+            </Button>
+          )}
+        </div>
+        {open && term.length > 0 && (
+          <div className="absolute top-full right-0 left-0 z-50 mt-1 rounded-md border bg-popover text-popover-foreground shadow-md">
+            <CommandList className="p-1">
+              {matches.length === 0 ? (
+                <div className="px-2 py-3 text-center text-xs text-muted-foreground">
+                  No matching companies
+                </div>
+              ) : (
+                matches.map((a) => (
+                  <CommandItem
+                    key={a.id}
+                    value={a.id}
+                    // Prevent the input's blur from closing the list before the click lands
+                    onMouseDown={(e) => e.preventDefault()}
+                    onSelect={() => {
+                      setSelected(a);
+                      setOpen(false);
+                    }}
+                  >
+                    <div className="min-w-0">
+                      <div className="truncate text-[13px] font-medium">{a.name}</div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        {[a.role, a.status].filter(Boolean).join(' · ')}
+                      </div>
+                    </div>
+                  </CommandItem>
+                ))
+              )}
+            </CommandList>
+          </div>
         )}
-        renderInput={(params) => <TextField {...params} placeholder="Search by company" />}
-      />
+      </Command>
       {selected && (
         <UpdateApplicationModal
           key={selected.id}
