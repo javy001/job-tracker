@@ -18,6 +18,9 @@ import { useApplications } from '../hooks/useApplications';
 import { Section } from './Section';
 
 const barColor = 'var(--subtle-foreground)';
+// Private mode uses the app accent (matching the active Private toggle) so the
+// shared availability view still looks lively without revealing event types
+const privateColor = 'var(--primary)';
 
 // Private mode hides company, role and event type so the week can be
 // screenshotted and shared (e.g. with recruiters) to show availability only
@@ -164,7 +167,7 @@ export function WeekCalendar() {
   const weekLabel = `${monday.format('MMM D')} – ${days[4].format('MMM D, YYYY')}`;
 
   const eventColor = (event: ApplicationEvent) =>
-    isPrivate ? barColor : (eventTypes[event.type]?.color ?? barColor);
+    isPrivate ? privateColor : (eventTypes[event.type]?.color ?? barColor);
 
   const renderEventBody = ({ application, event }: CalendarEvent, showTime: boolean) =>
     isPrivate ? (
