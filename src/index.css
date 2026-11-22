@@ -26,6 +26,9 @@
   --destructive: #c2410c;
   --border: #e4e5e9;
   --border-strong: #d3d5db;
+  /* Pipeline Flow chart: application source colors */
+  --source-inbound: #d6409f;
+  --source-outbound: #4f5bd5;
   --input: #e4e5e9;
   --ring: #4a6ee0;
 
@@ -55,6 +58,8 @@
   --destructive: #e8743a;
   --border: #3a3c43;
   --border-strong: #4b4e56;
+  --source-inbound: #db4fa8;
+  --source-outbound: #6474ee;
   --input: #474a52;
   --ring: #5578e8;
 

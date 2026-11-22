@@ -11,6 +11,7 @@ import { JobsTable } from './components/JobsTable';
 import { MetricCards } from './components/MetricCards';
 import { metricFilters, type MetricFilter } from './metricFilters';
 import { PipelineTimeline } from './components/PipelineTimeline';
+import { PipelineSankey } from './components/PipelineSankey';
 import { WeekCalendar } from './components/WeekCalendar';
 import { PendingFollowUps } from './components/PendingFollowUps';
 import { Flashcards } from './components/Flashcards';
@@ -63,6 +64,7 @@ function App() {
         <WeekCalendar />
         <PendingFollowUps />
         <PipelineTimeline />
+        <PipelineSankey />
         <MetricCards filter={metricFilter} onFilterChange={setMetricFilter} />
         <JobsTable filter={metricFilter ? metricFilters[metricFilter] : undefined} />
         {/* <SalaryRangeChart /> */}
