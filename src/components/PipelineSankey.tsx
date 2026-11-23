@@ -178,7 +178,10 @@ export function PipelineSankey() {
   const focus = selected ?? hovered;
   const focusApps = appsFor(focus);
   const focusIds = focusApps ? new Set(focusApps.map((a) => a.id)) : undefined;
-  const selectedApps = appsFor(selected);
+  // Most recent activity first; apps with no events fall back to their applied date
+  const lastActivity = (a: JobApplication) =>
+    a.events.reduce((max, e) => (e.date > max ? e.date : max), a.date_applied ?? '');
+  const selectedApps = appsFor(selected)?.toSorted((a, b) => lastActivity(b).localeCompare(lastActivity(a)));
   const countIn = (apps: JobApplication[]) =>
     focusIds ? apps.filter((a) => focusIds.has(a.id)).length : apps.length;
 
@@ -334,7 +337,7 @@ export function PipelineSankey() {
           Clear
         </button>
       </div>
-      <div className="max-h-64 overflow-y-auto">
+      <div>
         {selectedApps.map((app) => (
           <button
             key={app.id}
