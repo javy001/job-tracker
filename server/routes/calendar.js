@@ -85,6 +85,62 @@ const suggestApplication = (invite, applications) => {
   return best && { applicationId: best.applicationId, reason: best.reason };
 };
 
+// Hosts of video call services whose links count as the invite's meeting link
+const MEETING_HOST = /(^|\.)(zoom\.us|zoomgov\.com|meet\.google\.com|teams\.microsoft\.com|teams\.live\.com|webex\.com|whereby\.com|meet\.jit\.si|gotomeeting\.com|meet\.goto\.com|chime\.aws|bluejeans\.com|around\.co|meet\.around\.co|app\.cal\.com|coderpad\.io|hackerrank\.com|codesignal\.com)$/i;
+
+const isMeetingUrl = (s) => {
+  try {
+    const u = new URL(s);
+    return /^https?:$/.test(u.protocol) && MEETING_HOST.test(u.hostname);
+  } catch {
+    return false;
+  }
+};
+
+const URL_PATTERN = /https?:\/\/[^\s<>"')\]]+/gi;
+
+// Calendar descriptions are sometimes HTML; reduce them to plain text
+const htmlToText = (s) =>
+  !/<[a-z][^>]*>/i.test(s)
+    ? s
+    : s
+        .replace(/<a\s[^>]*href="([^"]+)"[^>]*>(.*?)<\/a>/gi, (_, href, label) =>
+          label.replace(/<[^>]+>/g, '').trim() === href ? href : `${label} (${href})`)
+        .replace(/<br\s*\/?>|<\/(p|div|li|h\d)>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'");
+
+// Drop the dial-in boilerplate Google Meet and Teams append to descriptions;
+// the meeting link is surfaced on its own
+const cleanDescription = (raw) =>
+  htmlToText(raw)
+    .replace(/-::~:~::~[\s\S]*?(-::~:~::~[:~]*-?|$)/g, '')
+    .replace(/_{20,}[\s\S]*?(_{20,}|$)/g, '')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+// The invite's video call link: a conferencing property if the calendar set
+// one, else the first video-call link in the location, URL or description
+const meetingUrlOf = (ev) => {
+  const props = [
+    ev['GOOGLE-CONFERENCE'],
+    ev['MICROSOFT-SKYPETEAMSMEETINGURL'],
+    ev['MICROSOFT-ONLINEMEETINGCONFLINK'],
+    ev['MICROSOFT-ONLINEMEETINGEXTERNALLINK'],
+  ].map(text).filter((u) => /^https?:\/\//i.test(u));
+  if (props.length) return props[0];
+  const candidates = [text(ev.location), text(ev.url), text(ev.description)]
+    .flatMap((s) => htmlToText(s).match(URL_PATTERN) ?? [])
+    .map((u) => u.replace(/[.,;:]+$/, ''));
+  return candidates.find(isMeetingUrl) ?? null;
+};
+
 const fetchInvites = async () => {
   const now = Date.now();
   const from = now - LOOKBACK_DAYS * 864e5;
@@ -112,8 +168,9 @@ const fetchInvites = async () => {
       invites.push({
         uid: ev.uid,
         title,
-        description: text(ev.description).slice(0, 500),
+        description: cleanDescription(text(ev.description)).slice(0, 4000),
         location: text(ev.location),
+        meetingUrl: meetingUrlOf(ev),
         date: localDate(start),
         time: allDay ? null : localTime(start),
         duration: !allDay && minutes > 0 && minutes <= 24 * 60 ? minutes : null,

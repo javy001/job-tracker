@@ -1,5 +1,5 @@
 import React from 'react';
-import { CalendarCheckIcon, CalendarXIcon, XIcon } from 'lucide-react';
+import { CalendarCheckIcon, CalendarXIcon, VideoIcon, XIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -67,7 +67,10 @@ export function EventCalendarLink({ event, takenUids, ownUids, onChange }: Props
     return (
       <div className="flex min-h-7 items-center gap-1.5">
         <Select defaultOpen onValueChange={link}>
-          <SelectTrigger aria-label="Calendar invite" className="min-w-0 flex-1 bg-background">
+          <SelectTrigger
+            aria-label="Calendar invite"
+            className="min-w-0 flex-1 bg-background"
+          >
             <SelectValue placeholder="Choose a calendar invite" />
           </SelectTrigger>
           <SelectContent>
@@ -83,7 +86,12 @@ export function EventCalendarLink({ event, takenUids, ownUids, onChange }: Props
             ))}
           </SelectContent>
         </Select>
-        <Button variant="ghost" size="icon" aria-label="Cancel" onClick={() => setPicking(false)}>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Cancel"
+          onClick={() => setPicking(false)}
+        >
           <XIcon />
         </Button>
       </div>
@@ -114,31 +122,94 @@ export function EventCalendarLink({ event, takenUids, ownUids, onChange }: Props
       : 'Linked to a calendar invite';
 
   return (
-    <div
-      className={cn(
-        'flex min-h-7 items-center gap-1.5 rounded-md py-0.5 pr-0.5 pl-2',
-        cancelled ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary dark:text-[#9db2ff]',
-      )}
-    >
-      {cancelled ? (
-        <CalendarXIcon className="size-3.5 shrink-0" />
-      ) : (
-        <CalendarCheckIcon className="size-3.5 shrink-0" />
-      )}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className="min-w-0 flex-1 truncate text-xs">{description}</span>
-        </TooltipTrigger>
-        <TooltipContent>{description}</TooltipContent>
-      </Tooltip>
-      {data?.configured && (
-        <Button variant="ghost" size="xs" onClick={() => setPicking(true)}>
-          Change
+    <div className="flex flex-col gap-1.5">
+      <div
+        className={cn(
+          'flex min-h-7 items-center gap-1.5 rounded-md py-0.5 pr-0.5 pl-2',
+          cancelled
+            ? 'bg-destructive/10 text-destructive'
+            : 'bg-primary/10 text-primary dark:text-[#9db2ff]',
+        )}
+      >
+        {cancelled ? (
+          <CalendarXIcon className="size-3.5 shrink-0" />
+        ) : (
+          <CalendarCheckIcon className="size-3.5 shrink-0" />
+        )}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="min-w-0 flex-1 truncate text-xs">{description}</span>
+          </TooltipTrigger>
+          <TooltipContent>{description}</TooltipContent>
+        </Tooltip>
+        {linked?.meetingUrl && !cancelled && (
+          <Button variant="ghost" size="xs" asChild>
+            <a href={linked.meetingUrl} target="_blank" rel="noopener noreferrer">
+              <VideoIcon />
+              Join call
+            </a>
+          </Button>
+        )}
+        {data?.configured && (
+          <Button variant="ghost" size="xs" onClick={() => setPicking(true)}>
+            Change
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          size="xs"
+          className="text-muted-foreground"
+          onClick={unlink}
+        >
+          Unlink
         </Button>
+      </div>
+      {linked?.description && <InviteDescription text={linked.description} />}
+    </div>
+  );
+}
+
+const LINK_PATTERN = /(https?:\/\/[^\s<>"')\]]+)/g;
+
+// The invite's description as plain text with clickable links, clamped to a
+// few lines until expanded
+function InviteDescription({ text }: { text: string }) {
+  const [expanded, setExpanded] = React.useState(false);
+  const long = text.length > 240 || text.split('\n').length > 4;
+
+  return (
+    <div className="rounded-md bg-background/60 px-2 py-1.5 text-xs text-muted-foreground">
+      <p
+        className={cn(
+          'break-words whitespace-pre-line',
+          !expanded && long && 'line-clamp-4',
+        )}
+      >
+        {text.split(LINK_PATTERN).map((part, i) =>
+          i % 2 === 1 ? (
+            <a
+              key={i}
+              href={part}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary underline-offset-2 hover:underline dark:text-[#9db2ff]"
+            >
+              {part}
+            </a>
+          ) : (
+            part
+          ),
+        )}
+      </p>
+      {long && (
+        <button
+          type="button"
+          className="mt-0.5 text-foreground hover:underline"
+          onClick={() => setExpanded((e) => !e)}
+        >
+          {expanded ? 'Show less' : 'Show more'}
+        </button>
       )}
-      <Button variant="ghost" size="xs" className="text-muted-foreground" onClick={unlink}>
-        Unlink
-      </Button>
     </div>
   );
 }

@@ -40,6 +40,7 @@ export interface CalendarInvite {
   title: string;
   description: string;
   location: string;
+  meetingUrl: string | null; // video call link (Zoom, Meet, Teams, ...) if the invite has one
   date: string; // YYYY-MM-DD
   time: string | null; // HH:mm, null for all-day events
   duration: number | null; // minutes
