@@ -109,7 +109,7 @@ const layoutDay = (events: CalendarEvent[]): PlacedEvent[] => {
 export function WeekCalendar() {
   const { data = [] } = useApplications();
   const [monday, setMonday] = React.useState(getDefaultMonday);
-  const [clickedRow, setClickedRow] = React.useState<JobApplication>();
+  const [clicked, setClicked] = React.useState<CalendarEvent>();
   const [isPrivate, setIsPrivate] = React.useState(readPrivate);
   const togglePrivate = () =>
     setIsPrivate((p) => {
@@ -232,11 +232,12 @@ export function WeekCalendar() {
 
   return (
     <Section title="Upcoming events" actions={actions}>
-      {clickedRow && (
+      {clicked && (
         <UpdateApplicationModal
-          open={!!clickedRow}
-          onClose={() => setClickedRow(undefined)}
-          data={clickedRow}
+          open
+          onClose={() => setClicked(undefined)}
+          data={clicked.application}
+          focusEvent={clicked.event}
         />
       )}
       <div className="grid grid-cols-[44px_repeat(5,minmax(0,1fr))] gap-x-2 gap-y-1">
@@ -269,7 +270,7 @@ export function WeekCalendar() {
                   key={i}
                   className={eventBlock}
                   style={eventBlockStyle(eventColor(e.event))}
-                  onClick={() => setClickedRow(e.application)}
+                  onClick={() => setClicked(e)}
                 >
                   {renderEventBody(e, false)}
                 </div>
@@ -325,7 +326,7 @@ export function WeekCalendar() {
                       left: `calc(${(e.column / e.columns) * 100}% + 2px)`,
                       width: `calc(${100 / e.columns}% - 4px)`,
                     }}
-                    onClick={() => setClickedRow(e.application)}
+                    onClick={() => setClicked({ application: e.application, event: e.event })}
                   >
                     {renderEventBody(e, true)}
                   </div>

@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 import type { ApplicationEvent, ApplicationEventType, JobApplication } from '../types';
 import { DatePicker } from './DatePicker';
 import { TimePicker } from './TimePicker';
@@ -54,9 +55,11 @@ interface Props {
   open: boolean;
   onClose: () => void;
   data: JobApplication;
+  // Event (from data.events) to scroll into view and highlight when the modal opens
+  focusEvent?: ApplicationEvent;
 }
 
-export function UpdateApplicationModal({ open, onClose, data }: Props) {
+export function UpdateApplicationModal({ open, onClose, data, focusEvent }: Props) {
   const [companyName, setCompanyName] = React.useState<string | null>(data.name);
   const [role, setRole] = React.useState<string | null>(data.role);
   const [location, setLocation] = React.useState<string | null>(data.location);
@@ -77,6 +80,19 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
   const [events, setEvents] = React.useState<EditableEvent[]>(() =>
     (data.events ?? []).map(withId)
   );
+  // Row matching focusEvent, highlighted briefly after it scrolls into view
+  const [focusedId, setFocusedId] = React.useState<string | undefined>(() => {
+    const index = focusEvent ? (data.events ?? []).indexOf(focusEvent) : -1;
+    return index === -1 ? undefined : events[index]._id;
+  });
+  const scrolledToFocus = React.useRef(false);
+  const focusedRowRef = React.useCallback((el: HTMLDivElement | null) => {
+    if (!el || scrolledToFocus.current) return;
+    scrolledToFocus.current = true;
+    // Wait a frame so the dialog's initial autofocus doesn't scroll back to the top
+    requestAnimationFrame(() => el.scrollIntoView({ block: 'center' }));
+    setTimeout(() => setFocusedId(undefined), 1500);
+  }, []);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
 
@@ -258,7 +274,11 @@ export function UpdateApplicationModal({ open, onClose, data }: Props) {
           {events.toReversed().map((e) => (
             <div
               key={e._id}
-              className="flex flex-col gap-2 rounded-md border border-l-[3px] bg-muted/40 p-3"
+              ref={e._id === focusedId ? focusedRowRef : undefined}
+              className={cn(
+                'flex flex-col gap-2 rounded-md border border-l-[3px] bg-muted/40 p-3 ring-primary/60 transition-shadow duration-700',
+                e._id === focusedId && 'ring-2'
+              )}
               style={{ borderLeftColor: eventTypes[e.type]?.color ?? 'var(--subtle-foreground)' }}
             >
               <div className="flex items-center gap-2">
